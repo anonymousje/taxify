@@ -26,3 +26,21 @@ def add_income_for_user(
     db.commit()
     db.refresh(new_income)
     return new_income
+
+
+@router.delete("/delete_income/{income_id}", status_code=200)
+def delete_income_for_user(
+    income_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    income = db.query(Income).filter(Income.id == income_id,
+                                     Income.user_id == current_user.id).first()
+
+    if not income:
+        raise HTTPException(status_code=404, detail="Income record not found")
+
+    db.delete(income)
+    db.commit()
+
+    return {"detail": "Income deleted successfully"}
