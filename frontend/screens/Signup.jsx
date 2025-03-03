@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 const Signup = () => {
     const navigation = useNavigation();
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [secure, setSecure] = useState(true);
     const [rememberMe, setRememberMe] = useState(false);
@@ -22,6 +23,14 @@ const Signup = () => {
                 value={email}
                 keyboardType="email-address"
                 autoCapitalize="none"
+            />
+
+            <Text className="text-purple-600 font-medium mb-1">Name</Text>
+            <TextInput
+                className="border border-gray-300 rounded-md px-4 py-3 w-90 mb-4 text-lg h-12"
+                placeholder="Enter your Name"
+                onChangeText={setName}
+                value={name}
             />
             
             <Text className="text-purple-600 font-medium mb-1">Password</Text>
