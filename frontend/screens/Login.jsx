@@ -2,6 +2,7 @@ import { View, Text, TextInput, TouchableOpacity, ImageBackground } from 'react-
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Login = () => {
@@ -10,6 +11,28 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [secure, setSecure] = useState(true);
     const [rememberMe, setRememberMe] = useState(false);
+
+
+    const handleLogin = async () => {
+        try {
+            const response = await fetch('http://192.168.1.102:8000/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                await AsyncStorage.setItem('accessToken', data.access_token);
+                // Optionally, update global auth state here
+                console.log('Logged In');
+                // navigation.navigate('Signup');
+            } else {
+                console.log('Login failed:', data.detail);
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+        }
+    };
 
     return (
         <View className="flex-1 justify-center items-left bg-white px-6">
@@ -50,7 +73,8 @@ const Login = () => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity className="bg-purple-600 w-90 h-12 rounded-md flex items-center justify-center mb-4">
+            <TouchableOpacity className="bg-purple-600 w-90 h-12 rounded-md flex items-center justify-center mb-4"
+            onPress={handleLogin}>
                 <Text className="text-white text-lg font-bold">Login</Text>
             </TouchableOpacity>
 
