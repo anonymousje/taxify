@@ -1,6 +1,7 @@
 """User DB Model"""
 
 from sqlalchemy import Column, LargeBinary, Integer, String
+from sqlalchemy.orm import relationship
 from models.base import Base
 
 
@@ -11,3 +12,5 @@ class User(Base):
     email = Column(String, index=True)
     name = Column(String)
     password = Column(LargeBinary)
+
+    incomes = relationship("Income", back_populates="user")
