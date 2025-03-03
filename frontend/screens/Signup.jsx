@@ -11,6 +11,27 @@ const Signup = () => {
     const [secure, setSecure] = useState(true);
     const [rememberMe, setRememberMe] = useState(false);
 
+    const handleSignup = async () => {
+        try {
+            const response = await fetch('http://192.168.1.102:8000/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, password }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                console.log('Signup successful:', data);
+                // Optionally, navigate directly to the home screen or login screen.
+                navigation.navigate('Login');
+            } else {
+                console.log('Signup failed:', data.detail || data);
+            }
+        } catch (error) {
+            console.error('Error during signup:', error);
+        }
+    };
+
+
     return (
         <View className="flex-1 justify-center bg-white px-6">
             <Text className="text-black text-2xl font-bold mb-6">Create an account</Text>
@@ -57,7 +78,7 @@ const Signup = () => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity className="bg-purple-600 w-90 h-12 rounded-md flex items-center justify-center mb-4">
+            <TouchableOpacity onPress={handleSignup} className="bg-purple-600 w-90 h-12 rounded-md flex items-center justify-center mb-4">
                 <Text className="text-white text-lg font-bold">Sign Up</Text>
             </TouchableOpacity>
 
