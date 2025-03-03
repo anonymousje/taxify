@@ -1,10 +1,10 @@
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
+from jwt_handler import create_access_token
 from models.user import User
 from pydantic_schemas.user_create import UserCreate
 from sqlalchemy.orm import Session
-
 from pydantic_schemas.user_login import UserLogin
 
 router = APIRouter()
@@ -53,4 +53,5 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
             "Incorrect password!",
         )
 
-    return user_db
+    access_token = create_access_token(data={"user_id": user_db.id})
+    return {"access_token": access_token, "token_type": "bearer"}
