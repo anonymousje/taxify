@@ -44,3 +44,11 @@ def delete_income_for_user(
     db.commit()
 
     return {"detail": "Income deleted successfully"}
+
+
+@router.get("/get_incomes", status_code=200)
+def get_incomes_for_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    income_list = db.query(Income).filter(
+        Income.user_id == current_user.id).all()
+
+    return income_list
