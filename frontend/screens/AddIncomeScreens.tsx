@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Platform } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { format } from "date-fns";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddIncomeScreen = () => {
   const [date, setDate] = useState(new Date());
@@ -37,12 +38,50 @@ const AddIncomeScreen = () => {
     }
   };
 
-  const handleSave = () => {
-    console.log("Date:", format(date, "dd/MM/yyyy"));
-    console.log("Category:", category);
-    console.log("Description:", description);
-    console.log("Total:", total);
+
+const handleSave = async () => {
+  console.log("Date:", format(date, "dd/MM/yyyy"));
+  console.log("Category:", category);
+  console.log("Description:", description);
+  console.log("Total:", total);
+
+  const incomeData = {
+    date: format(date, "yyyy-MM-dd"),
+    income_category: category,
+    description: description,
+    total: total,
   };
+
+  try {
+    // Retrieve the stored access token
+    const token = await AsyncStorage.getItem('accessToken');
+    if (!token) {
+      console.error("No access token available!");
+      return;
+    }
+
+    // Replace YOUR_BACKEND_IP with your actual backend IP or URL (e.g., http://192.168.1.100:8000)
+    const response = await fetch("http://192.168.1.102:8000/income/add_income", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(incomeData)
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log("Income added successfully:", data);
+      // Optionally, navigate to another screen or update your state here.
+    } else {
+      console.error("Error adding income:", data.detail || data);
+    }
+  } catch (error) {
+    console.error("Error during API call:", error);
+  }
+};
+
 
   return (
     <View className="flex-1 bg-gray-100 p-4">
@@ -94,6 +133,8 @@ const AddIncomeScreen = () => {
         placeholder="Total"
         className="bg-gray-200 p-4 rounded-lg mb-4"
         keyboardType="numeric"
+        returnKeyType="done"
+        blurOnSubmit={true}
         value={total}
         onChangeText={setTotal}
       />

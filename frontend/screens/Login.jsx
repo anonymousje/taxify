@@ -25,7 +25,7 @@ const Login = () => {
                 await AsyncStorage.setItem('accessToken', data.access_token);
                 // Optionally, update global auth state here
                 console.log('Logged In');
-                // navigation.navigate('Signup');
+                navigation.navigate('UserDashboard');
             } else {
                 console.log('Login failed:', data.detail);
             }
