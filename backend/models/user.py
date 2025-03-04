@@ -14,3 +14,5 @@ class User(Base):
     password = Column(LargeBinary)
 
     incomes = relationship("Income", back_populates="user")
+    expenses = relationship("Expense", back_populates="user")
+    receipts = relationship("Receipt", back_populates="user")
