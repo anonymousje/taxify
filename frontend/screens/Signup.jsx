@@ -21,7 +21,6 @@ const Signup = () => {
             const data = await response.json();
             if (response.ok) {
                 console.log('Signup successful:', data);
-                // Optionally, navigate directly to the home screen or login screen.
                 navigation.navigate('Login');
             } else {
                 console.log('Signup failed:', data.detail || data);

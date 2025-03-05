@@ -3,12 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, Platform } from "react-native"
 import { SelectList } from "react-native-dropdown-select-list";
 import { format } from "date-fns";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const AddIncomeScreen = () => {
   const [date, setDate] = useState(new Date());
   const [category, setCategory] = useState("Salary");
   const [description, setDescription] = useState("");
   const [total, setTotal] = useState("");
+  const navigation = useNavigation();
 
   const categories = [
     { key: "1", value: "Salary" },
@@ -22,7 +24,7 @@ const AddIncomeScreen = () => {
         const { DateTimePickerAndroid } = require('@react-native-community/datetimepicker');
         DateTimePickerAndroid.open({
           value: date,
-          onChange: (event, selectedDate: Date) => {
+          onChange: (event, selectedDate) => {
             if (event.type === 'set' && selectedDate) {
               setDate(selectedDate);
             }
@@ -30,7 +32,6 @@ const AddIncomeScreen = () => {
           mode: 'date',
         });
       } else {
-        // For iOS, you might want to implement a different approach
         console.log('iOS date picker not implemented');
       }
     } catch (error) {
@@ -38,50 +39,49 @@ const AddIncomeScreen = () => {
     }
   };
 
+  const handleSave = async () => {
+    const selectedCategory =
+      categories.find(item => item.key === category)?.value || category;
 
-const handleSave = async () => {
-  console.log("Date:", format(date, "dd/MM/yyyy"));
-  console.log("Category:", category);
-  console.log("Description:", description);
-  console.log("Total:", total);
+    console.log("Date:", format(date, "dd/MM/yyyy"));
+    console.log("Category:", selectedCategory);
+    console.log("Description:", description);
+    console.log("Total:", total);
 
-  const incomeData = {
-    date: format(date, "yyyy-MM-dd"),
-    income_category: category,
-    description: description,
-    total: total,
+    const incomeData = {
+      date: format(date, "yyyy-MM-dd"),
+      income_category: selectedCategory,
+      description: description,
+      total: parseFloat(total),
+    };
+
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error("No access token available!");
+        return;
+      }
+
+      const response = await fetch("http://192.168.1.102:8000/income/add_income", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(incomeData)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log("Income added successfully:", data);
+        navigation.goBack();
+      } else {
+        console.error("Error adding income:", data.detail || data);
+      }
+    } catch (error) {
+      console.error("Error during API call:", error);
+    }
   };
-
-  try {
-    // Retrieve the stored access token
-    const token = await AsyncStorage.getItem('accessToken');
-    if (!token) {
-      console.error("No access token available!");
-      return;
-    }
-
-    // Replace YOUR_BACKEND_IP with your actual backend IP or URL (e.g., http://192.168.1.100:8000)
-    const response = await fetch("http://192.168.1.102:8000/income/add_income", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify(incomeData)
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      console.log("Income added successfully:", data);
-      // Optionally, navigate to another screen or update your state here.
-    } else {
-      console.error("Error adding income:", data.detail || data);
-    }
-  } catch (error) {
-    console.error("Error during API call:", error);
-  }
-};
-
 
   return (
     <View className="flex-1 bg-gray-100 p-4">
@@ -104,7 +104,10 @@ const handleSave = async () => {
       {/* Category Selector */}
       <View className="mb-4">
         <SelectList
-          setSelected={setCategory}
+          setSelected={(selectedKey) => {
+            const selectedValue = categories.find(item => item.key === selectedKey)?.value;
+            setCategory(selectedValue || selectedKey);
+          }}
           data={categories}
           defaultOption={{ key: "1", value: "Salary" }}
           boxStyles={{
@@ -134,7 +137,7 @@ const handleSave = async () => {
         className="bg-gray-200 p-4 rounded-lg mb-4"
         keyboardType="numeric"
         returnKeyType="done"
-        blurOnSubmit={true}
+        onSubmitEditing={() => {}}
         value={total}
         onChangeText={setTotal}
       />
