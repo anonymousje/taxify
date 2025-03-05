@@ -61,7 +61,7 @@ const DashboardScreen = () => {
               style={{ marginVertical: 10 }}
               onPress={() => {
                 setShowOptions(false);
-                navigation.navigate('AddIncomeScreen');
+                navigation.navigate('IncomeListScreen');
               }}
             >
               <Text style={{ fontSize: 18 }}>Add Income</Text>
@@ -70,7 +70,7 @@ const DashboardScreen = () => {
               style={{ marginVertical: 10 }}
               onPress={() => {
                 setShowOptions(false);
-                navigation.navigate('AddExpenseScreen');
+                navigation.navigate('ExpenseListScreen');
               }}
             >
               <Text style={{ fontSize: 18 }}>Add Expense</Text>
@@ -132,7 +132,7 @@ const DashboardScreen = () => {
         >
           <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("Receipts")}>
+        <TouchableOpacity onPress={() => navigation.navigate("ReceiptListScreen")}>
           <Ionicons name="receipt" size={24} color="black" />
           <Text>Receipts</Text>
         </TouchableOpacity>
