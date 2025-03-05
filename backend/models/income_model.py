@@ -12,7 +12,7 @@ class Income(Base):
     date = Column(Date, nullable=False)
     income_category = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    total = Column(Float, nullable=False)
+    total = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id"),
                      nullable=False)
 

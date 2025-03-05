@@ -12,7 +12,8 @@ class Expense(Base):
     date = Column(Date, nullable=False)
     expense_category = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    total = Column(Float, nullable=False)
+    total = Column(Float, default=0.0)
+    tax = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="expenses")

@@ -18,6 +18,7 @@ def add_expense_for_user(
 ):
     new_expense = Expense(
         total=expense_data.total,
+        tax=expense_data.tax,
         description=expense_data.description,
         date=expense_data.date,
         expense_category=expense_data.expense_category,
