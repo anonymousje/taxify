@@ -11,3 +11,4 @@ class ExpenseCreate(BaseModel):
     expense_category: str
     description: Optional[str] = None
     total: float
+    tax: Optional[float] = None
