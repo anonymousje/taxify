@@ -23,7 +23,6 @@ const Login = () => {
             const data = await response.json();
             if (response.ok) {
                 await AsyncStorage.setItem('accessToken', data.access_token);
-                // Optionally, update global auth state here
                 console.log('Logged In');
                 navigation.navigate('UserDashboard');
             } else {

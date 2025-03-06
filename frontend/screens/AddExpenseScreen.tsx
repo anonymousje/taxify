@@ -1,12 +1,15 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
   Platform,
   Modal,
   Alert,
+  Image,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SelectList } from "react-native-dropdown-select-list";
@@ -21,6 +24,7 @@ const AddExpenseScreen = () => {
   const [description, setDescription] = useState("");
   const [total, setTotal] = useState("");
   const [tax, setTax] = useState("");
+  const [receipt, setReceipt] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const navigation = useNavigation();
 
@@ -53,7 +57,6 @@ const AddExpenseScreen = () => {
 
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
-    // For iOS, keep the picker visible until explicitly closed
     setShowDatePicker(Platform.OS === "ios");
     setDate(currentDate);
   };
@@ -61,7 +64,6 @@ const AddExpenseScreen = () => {
   const pickImage = async () => {
     console.log("pickImage called");
     try {
-      // Request permission to access the media library
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       console.log("Permission status:", permissionResult.status);
       if (permissionResult.status !== "granted") {
@@ -73,7 +75,6 @@ const AddExpenseScreen = () => {
       }
       
       let result = await ImagePicker.launchImageLibraryAsync({
-        // Using MediaTypeOptions.Images (deprecated but working) to ensure the picker shows up
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 1,
@@ -82,7 +83,7 @@ const AddExpenseScreen = () => {
       console.log("Image picker result:", result);
       if (!result.canceled) {
         console.log("Selected image URI:", result.assets[0].uri);
-        // Here you can store the image URI in state or upload it as needed.
+        setReceipt(result.assets[0].uri);
       } else {
         console.log("Image picker canceled");
       }
@@ -92,9 +93,8 @@ const AddExpenseScreen = () => {
   };
 
   const handleSave = async () => {
-    // Map the category key to its corresponding string if needed.
     const selectedCategory =
-      categories.find(item => item.key === category)?.value || category;
+      categories.find((item) => item.key === category)?.value || category;
 
     console.log("Expense Details:");
     console.log("📅 Date:", format(date, "dd/MM/yyyy"));
@@ -102,14 +102,24 @@ const AddExpenseScreen = () => {
     console.log("📝 Description:", description || "No description provided");
     console.log("💰 Total:", total || "No total entered");
     console.log("💰 Tax:", tax || "No tax entered");
+    console.log("📷 Receipt:", receipt || "No receipt selected");
 
     const expenseData = {
       date: format(date, "yyyy-MM-dd"),
       expense_category: selectedCategory,
       description: description,
       total: parseFloat(total),
-      tax: parseFloat(tax)
+      tax: parseFloat(tax),
     };
+
+    if (receipt) {
+      expenseData.receipt = {
+        receipt_image: receipt,
+        date_uploaded: format(new Date(), "yyyy-MM-dd"),
+        vendor_name: "Default Vendor",
+        total_amount: parseFloat(total),
+      };
+    }
 
     try {
       const token = await AsyncStorage.getItem("accessToken");
@@ -140,131 +150,137 @@ const AddExpenseScreen = () => {
   };
 
   return (
-    <View className="flex-1 bg-white p-4">
-      {/* Header */}
-      <Text className="text-center text-xl font-semibold mb-6">
-        Add New Expense
-      </Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View className="flex-1 bg-white p-4">
+        {/* Header */}
+        <Text className="text-center text-xl font-semibold mb-6">
+          Add New Expense
+        </Text>
 
-      {/* Date Picker */}
-      <TouchableOpacity
-        onPress={openDatePicker}
-        className="bg-gray-300 p-4 rounded-lg mb-4 flex-row justify-between items-center"
-      >
-        <Text>{format(date, "dd/MM/yyyy")}</Text>
-        <Text>📅</Text>
-      </TouchableOpacity>
-
-      {/* iOS Date Picker Modal */}
-      {Platform.OS === "ios" && showDatePicker && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={showDatePicker}
-          onRequestClose={() => setShowDatePicker(false)}
+        {/* Date Picker */}
+        <TouchableOpacity
+          onPress={openDatePicker}
+          className="bg-gray-300 p-4 rounded-lg mb-4 flex-row justify-between items-center"
         >
-          <View className="flex-1 justify-end">
-            <View className="bg-white p-4">
-              <View className="flex-row justify-between mb-4">
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text className="text-purple-700">Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text className="text-purple-700">Done</Text>
-                </TouchableOpacity>
+          <Text>{format(date, "dd/MM/yyyy")}</Text>
+          <Text>📅</Text>
+        </TouchableOpacity>
+
+        {/* iOS Date Picker Modal */}
+        {Platform.OS === "ios" && showDatePicker && (
+          <Modal
+            transparent={true}
+            animationType="slide"
+            visible={showDatePicker}
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <View className="flex-1 justify-end">
+              <View className="bg-white p-4">
+                <View className="flex-row justify-between mb-4">
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text className="text-purple-700">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text className="text-purple-700">Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={date}
+                  mode="date"
+                  is24Hour={true}
+                  display="spinner"
+                  onChange={handleDateChange}
+                />
               </View>
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={date}
-                mode="date"
-                is24Hour={true}
-                display="spinner"
-                onChange={handleDateChange}
-              />
             </View>
-          </View>
-        </Modal>
-      )}
+          </Modal>
+        )}
 
-      {/* Category Selector */}
-      <SelectList
-        setSelected={(selectedKey) => {
-          const selectedValue = categories.find(item => item.key === selectedKey)?.value;
-          setCategory(selectedValue || selectedKey);
-        }}
-        data={categories}
-        defaultOption={{ key: "1", value: "Bill & Utility" }}
-        boxStyles={{
-          backgroundColor: "#E5E7EB",
-          borderWidth: 0,
-          padding: 16,
-          borderRadius: 8,
-        }}
-        dropdownStyles={{
-          backgroundColor: "#E5E7EB",
-          borderWidth: 0,
-        }}
-      />
+        {/* Category Selector */}
+        <SelectList
+          setSelected={(selectedKey) => {
+            const selectedValue = categories.find(item => item.key === selectedKey)?.value;
+            setCategory(selectedValue || selectedKey);
+          }}
+          data={categories}
+          defaultOption={{ key: "1", value: "Bill & Utility" }}
+          boxStyles={{
+            backgroundColor: "#E5E7EB",
+            borderWidth: 0,
+            padding: 16,
+            borderRadius: 8,
+          }}
+          dropdownStyles={{
+            backgroundColor: "#E5E7EB",
+            borderWidth: 0,
+          }}
+        />
 
-      {/* Description Input */}
-      <TextInput
-        placeholder="Description (Optional)"
-        className="bg-gray-300 p-4 rounded-lg mt-4"
-        value={description}
-        onChangeText={setDescription}
-      />
+        {/* Description Input */}
+        <TextInput
+          placeholder="Description (Optional)"
+          className="bg-gray-300 p-4 rounded-lg mt-4"
+          value={description}
+          onChangeText={setDescription}
+          onBlur={Keyboard.dismiss}
+        />
 
-      {/* Total Input */}
-      <TextInput
-        placeholder="Total"
-        className="bg-gray-300 p-4 rounded-lg mt-4"
-        keyboardType="numeric"
-        value={total}
-        onChangeText={setTotal}
-      />
+        {/* Total Input */}
+        <TextInput
+          placeholder="Total"
+          className="bg-gray-300 p-4 rounded-lg mt-4"
+          keyboardType="numeric"
+          value={total}
+          onChangeText={setTotal}
+          onBlur={Keyboard.dismiss}
+        />
 
-      {/* Tax Input */}
-      <TextInput
-        placeholder="Tax"
-        className="bg-gray-300 p-4 rounded-lg mt-4"
-        keyboardType="numeric"
-        value={tax}
-        onChangeText={setTax}
-      />
+        {/* Tax Input */}
+        <TextInput
+          placeholder="Tax"
+          className="bg-gray-300 p-4 rounded-lg mt-4"
+          keyboardType="numeric"
+          value={tax}
+          onChangeText={setTax}
+          onBlur={Keyboard.dismiss}
+        />
 
-      {/* Receipt Images Section */}
-      <Text className="mt-4 mb-2 text-gray-500">Expense receipt images</Text>
-      <View className="flex-row justify-between">
-        <TouchableOpacity
-          className="w-1/2 p-4 border border-gray-300 rounded-lg items-center mr-2"
-          onPress={pickImage}
-        >
-          <Text className="text-2xl text-gray-500">+</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="w-1/2 p-4 border border-gray-300 rounded-lg items-center ml-2"
-          onPress={pickImage}
-        >
-          <Text className="text-2xl text-gray-500">+</Text>
-        </TouchableOpacity>
+        {/* Receipt Images Section */}
+        <Text className="mt-4 mb-2 text-gray-500">Expense receipt images</Text>
+        <View className="flex-row justify-between">
+          <TouchableOpacity
+            className="w-1/2 p-4 border border-gray-300 rounded-lg items-center mr-2"
+            onPress={pickImage}
+          >
+            {receipt ? (
+              <Image
+                source={{ uri: receipt }}
+                style={{ width: "100%", height: 100, borderRadius: 8 }}
+              />
+            ) : (
+              <Text className="text-2xl text-gray-500">+</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Action Buttons */}
+        <View className="flex-row justify-between mt-6">
+          <TouchableOpacity
+            className="flex-1 bg-purple-700 p-4 rounded-lg mr-2"
+            onPress={() => navigation.goBack()}
+          >
+            <Text className="text-center text-white">Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 bg-purple-900 p-4 rounded-lg ml-2"
+            onPress={handleSave}
+          >
+            <Text className="text-center text-white">Save</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      {/* Action Buttons */}
-      <View className="flex-row justify-between mt-6">
-        <TouchableOpacity
-          className="flex-1 bg-purple-700 p-4 rounded-lg mr-2"
-          onPress={() => console.log("❌ Cancelled")}
-        >
-          <Text className="text-center text-white">Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 bg-purple-900 p-4 rounded-lg ml-2"
-          onPress={handleSave}
-        >
-          <Text className="text-center text-white">Save</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 

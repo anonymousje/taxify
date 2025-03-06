@@ -1,41 +1,64 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  FlatList, 
+  Image,
+  ActivityIndicator
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-const dummyReceipts = [
-  {
-    id: 1,
-    receipt_image: "https://via.placeholder.com/50",
-    date_uploaded: "19/08/2023",
-    vendor_name: "Shopping",
-    total_amount: 1101.0,
-  },
-  {
-    id: 2,
-    receipt_image: "https://via.placeholder.com/50",
-    date_uploaded: "01/08/2023",
-    vendor_name: "Bills and Utility",
-    total_amount: 5024.0,
-  },
-  {
-    id: 3,
-    receipt_image: "https://via.placeholder.com/50",
-    date_uploaded: "05/08/2023",
-    vendor_name: "Education",
-    total_amount: 18025.0,
-  },
-];
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ReceiptListScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [receipts, setReceipts] = useState(dummyReceipts);
+  const [receipts, setReceipts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    fetchReceipts();
+  }, []);
 
-  const handleDelete = (id) => {
-    setReceipts(receipts.filter((receipt) => receipt.id !== id));
+  const fetchReceipts = async () => {
+    try {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found!");
+        return;
+      }
+      const response = await fetch("http://192.168.1.102:8000/receipt/get_receipts", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReceipts(data);
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to fetch receipts:", errorData);
+      }
+    } catch (error) {
+      console.error("Error fetching receipts:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, padding: 16 }}>
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 10 }}>Receipts</Text>
       <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#EEE", padding: 8, borderRadius: 10 }}>
         <TextInput
           style={{ flex: 1, padding: 8 }}
@@ -57,14 +80,9 @@ const ReceiptListScreen = () => {
               <Text style={{ color: "gray" }}>{item.date_uploaded}</Text>
               <Text style={{ fontWeight: "bold" }}>${item.total_amount.toFixed(2)}</Text>
             </View>
-            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-              <Ionicons name="close-circle" size={24} color="red" />
-            </TouchableOpacity>
           </View>
         )}
       />
-
-      
     </View>
   );
 };

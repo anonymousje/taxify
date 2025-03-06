@@ -14,6 +14,7 @@ import { AuthProvider } from 'screens/AuthContext';
 
 import './global.css';
 import ReceiptListScreen from 'screens/ReceiptListScreen';
+import SettingsScreen from 'screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -69,12 +70,11 @@ export default function App() {
               component={ReceiptListScreen}
               options={{ headerShown: false }}
             />
-            {/* Uncomment below if needed
             <Stack.Screen
               name="Settings"
               component={SettingsScreen}
               options={{ headerShown: false }}
-            /> */}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
