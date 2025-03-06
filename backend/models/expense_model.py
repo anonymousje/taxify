@@ -17,4 +17,5 @@ class Expense(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="expenses")
-    receipts = relationship("Receipt", back_populates="expense")
+    receipts = relationship(
+        "Receipt", back_populates="expense", cascade="all, delete-orphan")

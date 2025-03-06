@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
+from pydantic_schemas.receipt_create import ReceiptCreate
 
 
 class ExpenseCreate(BaseModel):
@@ -12,3 +13,4 @@ class ExpenseCreate(BaseModel):
     description: Optional[str] = None
     total: float
     tax: Optional[float] = None
+    receipt: Optional[ReceiptCreate] = None

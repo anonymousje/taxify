@@ -1,8 +1,11 @@
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
-from jwt_handler import create_access_token
+from jwt_handler import create_access_token, get_current_user
 from models.user import User
+from pydantic_schemas.change_email import ChangeUserEmail
+from pydantic_schemas.change_name import ChangeUserName
+from pydantic_schemas.change_password import ChangeUserPassword
 from pydantic_schemas.user_create import UserCreate
 from sqlalchemy.orm import Session
 from pydantic_schemas.user_login import UserLogin
@@ -55,3 +58,76 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
 
     access_token = create_access_token(data={"user_id": user_db.id})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get('/fetch_user', status_code=200)
+def fetch_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Gets current user"""
+    user_db = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user_db:
+        raise HTTPException(
+            400,
+            "User with this ID does not exist",
+        )
+
+    return user_db
+
+
+@router.post('/change_password', status_code=200)
+def change_user_password(user: ChangeUserPassword, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Changes user password"""
+    user_db = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user_db:
+        raise HTTPException(
+            400,
+            "User with this ID does not exist",
+        )
+
+    hashed_password = bcrypt.hashpw(
+        user.new_password.encode(), bcrypt.gensalt())
+    user_db.password = hashed_password
+
+    db.commit()
+    db.refresh(user_db)
+
+    return user_db
+
+
+@router.post('/change_email', status_code=200)
+def change_user_password(user: ChangeUserEmail, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Changes user email"""
+    user_db = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user_db:
+        raise HTTPException(
+            400,
+            "User with this ID does not exist",
+        )
+
+    user_db.email = user.new_email
+
+    db.commit()
+    db.refresh(user_db)
+
+    return user_db
+
+
+@router.post('/change_name', status_code=200)
+def change_user_password(user: ChangeUserName, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Changes user name"""
+    user_db = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user_db:
+        raise HTTPException(
+            400,
+            "User with this ID does not exist",
+        )
+
+    user_db.email = user.new_name
+
+    db.commit()
+    db.refresh(user_db)
+
+    return user_db
