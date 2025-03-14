@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+import io
+from PIL import Image
+from models.extract_receipt_data import ReceiptInformationExtractor
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from database import get_db
 from models.income_model import Income
@@ -8,7 +11,27 @@ from jwt_handler import get_current_user
 from models.user import User
 from pydantic_schemas.receipt_create import ReceiptCreate
 
+# temp workaround
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 router = APIRouter()
+receipt_extractor = ReceiptInformationExtractor(
+    path_to_model="D:\\FYP\\TaxifyF\\taxify\\backend\\model")
+
+
+@router.post("/extract")
+async def extract_receipt(file: UploadFile = File(...)):
+    """Extract receipt information from an uploaded image."""
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400, detail="Invalid file format. Please upload an image.")
+
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents)).convert("RGB")
+
+    result = receipt_extractor(image)
+    return result
 
 
 @router.post("/add_receipt", status_code=201)

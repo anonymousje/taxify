@@ -4,6 +4,9 @@ import { SelectList } from "react-native-dropdown-select-list";
 import { format } from "date-fns";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddIncomeScreen = () => {
   const [date, setDate] = useState(new Date());
@@ -62,7 +65,7 @@ const AddIncomeScreen = () => {
         return;
       }
 
-      const response = await fetch("http://192.168.1.102:8000/income/add_income", {
+      const response = await fetch(`${API_URL}/income/add_income`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

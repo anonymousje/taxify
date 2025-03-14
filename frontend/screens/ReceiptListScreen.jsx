@@ -10,6 +10,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const ReceiptListScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,7 +30,7 @@ const ReceiptListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch("http://192.168.1.102:8000/receipt/get_receipts", {
+      const response = await fetch(`${API_URL}/receipt/get_receipts`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

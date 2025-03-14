@@ -17,6 +17,9 @@ import { format } from "date-fns";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddExpenseScreen = () => {
   const [date, setDate] = useState(new Date());
@@ -95,7 +98,7 @@ const AddExpenseScreen = () => {
   const handleSave = async () => {
     const selectedCategory =
       categories.find((item) => item.key === category)?.value || category;
-
+  
     console.log("Expense Details:");
     console.log("📅 Date:", format(date, "dd/MM/yyyy"));
     console.log("📂 Category:", selectedCategory);
@@ -103,15 +106,51 @@ const AddExpenseScreen = () => {
     console.log("💰 Total:", total || "No total entered");
     console.log("💰 Tax:", tax || "No tax entered");
     console.log("📷 Receipt:", receipt || "No receipt selected");
-
+  
+    let extractedData = {};
+  
+    if (receipt) {
+      try {
+        const formData = new FormData();
+        formData.append("file", {
+          uri: receipt,
+          name: "receipt.jpg",
+          type: "image/jpeg",
+        });
+  
+        console.log("Sending receipt to model API...");
+        const receiptResponse = await fetch(`${API_URL}/receipt/extract`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+  
+        const receiptData = await receiptResponse.json();
+        console.log("📜 Extracted Receipt Data:", receiptData);
+  
+        // Use extracted values if available
+        // extractedData = {
+        //   company: receiptData.company || "Unknown Vendor",
+        //   total: receiptData.total || total,
+        //   tax: receiptData.tax || tax,
+        //   description: `Receipt from ${receiptData.company || "Unknown Vendor"}`,
+        // };
+      } catch (error) {
+        console.error("Error extracting receipt data:", error);
+      }
+    }
+  
+    // Combine extracted data with user inputs
     const expenseData = {
       date: format(date, "yyyy-MM-dd"),
       expense_category: selectedCategory,
-      description: description,
-      total: parseFloat(total),
-      tax: parseFloat(tax),
+      description: description || description,
+      total: parseFloat(total || total),
+      tax: parseFloat(tax || tax),
     };
-
+  
     if (receipt) {
       expenseData.receipt = {
         receipt_image: receipt,
@@ -120,15 +159,15 @@ const AddExpenseScreen = () => {
         total_amount: parseFloat(total),
       };
     }
-
+  
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
         console.error("No access token available!");
         return;
       }
-
-      const response = await fetch("http://192.168.1.102:8000/expense/add_expense", {
+  
+      const response = await fetch(`${API_URL}/expense/add_expense`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,18 +175,19 @@ const AddExpenseScreen = () => {
         },
         body: JSON.stringify(expenseData),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
-        console.log("Expense added successfully:", data);
+        console.log("✅ Expense added successfully:", data);
         navigation.goBack();
       } else {
-        console.error("Error adding expense:", data.detail || data);
+        console.error("❌ Error adding expense:", data.detail || data);
       }
     } catch (error) {
       console.error("Error during API call:", error);
     }
   };
+  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

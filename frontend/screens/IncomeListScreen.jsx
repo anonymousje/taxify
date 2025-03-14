@@ -6,6 +6,9 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const IncomeListScreen = () => {
   const navigation = useNavigation();
@@ -19,7 +22,7 @@ const IncomeListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`http://192.168.1.102:8000/income/delete_income/${incomeId}`, {
+      const response = await fetch(`${API_URL}/income/delete_income/${incomeId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +53,7 @@ const IncomeListScreen = () => {
         return;
       }
 
-      const response = await fetch("http://192.168.1.102:8000/income/get_incomes", {
+      const response = await fetch(`${API_URL}/income/get_incomes`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from "expo-constants";
 
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const Login = () => {
     const navigation = useNavigation();
@@ -15,7 +17,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         try {
-            const response = await fetch('http://192.168.1.102:8000/auth/login', {
+            const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

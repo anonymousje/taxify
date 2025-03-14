@@ -2,6 +2,9 @@ import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const Signup = () => {
     const navigation = useNavigation();
@@ -13,7 +16,7 @@ const Signup = () => {
 
     const handleSignup = async () => {
         try {
-            const response = await fetch('http://192.168.1.102:8000/auth/signup', {
+            const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, name, password }),

@@ -4,6 +4,9 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const ExpenseListScreen = () => {
   const navigation = useNavigation();
@@ -17,7 +20,7 @@ const ExpenseListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch("http://192.168.1.102:8000/expense/get_expenses", {
+      const response = await fetch(`${API_URL}/expense/get_expenses`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -45,7 +48,7 @@ const ExpenseListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`http://192.168.1.102:8000/expense/delete_expense/${expenseId}`, {
+      const response = await fetch(`${API_URL}/expense/delete_expense/${expenseId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

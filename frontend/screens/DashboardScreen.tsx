@@ -19,6 +19,9 @@ import {
   isSameDay,
   isSameWeek,
 } from "date-fns";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const Dashboard = () => {
   const [income, setIncome] = useState([]);
@@ -41,7 +44,7 @@ const Dashboard = () => {
         console.error("No access token found!");
         return [];
       }
-      const response = await fetch("http://192.168.1.102:8000/expense/get_expenses", {
+      const response = await fetch(`${API_URL}/expense/get_expenses`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +74,7 @@ const Dashboard = () => {
         return [];
       }
 
-      const response = await fetch("http://192.168.1.102:8000/income/get_incomes", {
+      const response = await fetch(`${API_URL}/income/get_incomes`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

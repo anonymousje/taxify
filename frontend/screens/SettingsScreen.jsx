@@ -4,6 +4,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+
+const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const SettingsScreen = () => {
   const [user, setUser] = useState(null);
@@ -24,7 +27,7 @@ const SettingsScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch("http://192.168.1.102:8000/auth/fetch_user", {
+      const response = await fetch(`${API_URL}/auth/fetch_user`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -53,7 +56,7 @@ const SettingsScreen = () => {
             console.error("No access token found!");
             return;
         }
-        const response = await fetch('http://192.168.1.102:8000/auth/change_password', {
+        const response = await fetch(`${API_URL}/auth/change_password`, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
@@ -79,7 +82,7 @@ const SettingsScreen = () => {
             console.error("No access token found!");
             return;
         }
-        const response = await fetch('http://192.168.1.102:8000/auth/change_email', {
+        const response = await fetch(`${API_URL}/auth/change_email`, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
@@ -105,7 +108,7 @@ const SettingsScreen = () => {
             console.error("No access token found!");
             return;
         }
-        const response = await fetch('http://192.168.1.102:8000/auth/change_name', {
+        const response = await fetch(`${API_URL}/auth/change_name`, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
