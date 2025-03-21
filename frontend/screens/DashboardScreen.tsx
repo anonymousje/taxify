@@ -22,6 +22,7 @@ import {
 } from "date-fns";
 import Constants from "expo-constants";
 import { handleNavigation } from "./navigationHelper";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -47,26 +48,25 @@ const Dashboard = () => {
         console.error("No access token found!");
         return [];
       }
-      const response = await fetch(`${API_URL}/expense/get_expenses`, {
-        method: "GET",
+  
+      const response = await axios.get(`${API_URL}/expense/get_expenses`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setExpenses(data);
-        return data;
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch expenses:", errorData);
-        return [];
-      }
+  
+      setExpenses(response.data);
+      return response.data;
+  
     } catch (error) {
-      console.error("Error fetching expenses:", error);
+      if (error.response) {
+        console.error("Failed to fetch expenses:", error.response.data);
+      } else {
+        console.error("Error fetching expenses:", error.message);
+      }
       return [];
-    } 
+    }
   };
 
   const fetchIncome = async () => {
@@ -76,28 +76,25 @@ const Dashboard = () => {
         console.error("No access token found");
         return [];
       }
-
-      const response = await fetch(`${API_URL}/income/get_incomes`, {
-        method: "GET",
+  
+      const response = await axios.get(`${API_URL}/income/get_incomes`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIncome(data);
-        return data;
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch incomes:", errorData);
-        return [];
-      }
+  
+      setIncome(response.data);
+      return response.data;
+  
     } catch (error) {
-      console.error("Error fetching incomes:", error);
+      if (error.response) {
+        console.error("Failed to fetch incomes:", error.response.data);
+      } else {
+        console.error("Error fetching incomes:", error.message);
+      }
       return [];
-    } 
+    }
   };
 
   // Process data based on selected filter

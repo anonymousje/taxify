@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from "expo-constants";
+import { handleNavigation } from './navigationHelper';
+import axios from 'axios';
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -16,22 +18,21 @@ const Signup = () => {
 
     const handleSignup = async () => {
         try {
-            const response = await fetch(`${API_URL}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, name, password }),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                console.log('Signup successful:', data);
-                navigation.navigate('Login');
-            } else {
-                console.log('Signup failed:', data.detail || data);
-            }
+          const response = await axios.post(
+            `${API_URL}/auth/signup`,
+            { email, name, password },
+            { headers: { "Content-Type": "application/json" } }
+          );
+          console.log("Signup successful:", response.data);
+          handleNavigation(navigation, "Login");
         } catch (error) {
-            console.error('Error during signup:', error);
+          if (error.response) {
+            console.log("Signup failed:", error.response.data.detail || error.response.data);
+          } else {
+            console.error("Error during signup:", error);
+          }
         }
-    };
+      };
 
 
     return (

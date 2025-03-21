@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import axios from "axios"
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -23,7 +24,6 @@ const SettingsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editField, setEditField] = useState("");
   
-  // Separate state variables for each field
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
@@ -40,23 +40,22 @@ const SettingsScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/auth/fetch_user`, {
-        method: "GET",
+      const response = await axios.get(`${API_URL}/auth/fetch_user`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-        console.log("Fetched user:", data);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch user:", errorData);
-      }
+      setUser(response.data);
+      console.log("Fetched user:", response.data);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      if (error.response) {
+        console.error("Failed to fetch user:", error.response.data);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      } else {
+        console.error("Error fetching user:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,22 +68,24 @@ const SettingsScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/auth/change_password`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ "new_password": passwordInput }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        console.log('Password Changed');
-      } else {
-        console.log('Password Change Failed:', data.detail);
-      }
+      
+      const response = await axios.post(`${API_URL}/auth/change_password`,
+        { new_password: passwordInput },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+      
+      console.log("Password Changed", response.data);
     } catch (error) {
-      console.error('Error during password change:', error);
+      if (error.response) {
+        console.log("Password Change Failed:", error.response.data.detail);
+      } else {
+        console.error("Error during password change:", error);
+      }
     }
   };
 
@@ -95,22 +96,23 @@ const SettingsScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/auth/change_email`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ "new_email": emailInput }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        console.log('Email Changed');
-      } else {
-        console.log('Email Change Failed:', data.detail);
-      }
+      const response = await axios.post(
+        `${API_URL}/auth/change_email`,
+        { new_email: emailInput },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Email Changed", response.data);
     } catch (error) {
-      console.error('Error during email change:', error);
+      if (error.response) {
+        console.error("Email Change Failed:", error.response.data.detail);
+      } else {
+        console.error("Error during email change:", error);
+      }
     }
   };
 
@@ -121,26 +123,27 @@ const SettingsScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/auth/change_name`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ "new_name": nameInput }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        console.log('Name Changed');
-      } else {
-        console.log('Name Change Failed:', data.detail);
-      }
+      const response = await axios.post(
+        `${API_URL}/auth/change_name`,
+        { new_name: nameInput },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Name Changed", response.data);
     } catch (error) {
-      console.error('Error during name change:', error);
+      if (error.response) {
+        console.error("Name Change Failed:", error.response.data.detail);
+      } else {
+        console.error("Error during name change:", error);
+      }
     }
   };
+  
 
-  // When opening the edit modal, set the corresponding state explicitly.
   const handleEdit = (field) => {
     setEditField(field);
     if (field === "name") {
@@ -163,7 +166,6 @@ const SettingsScreen = () => {
       await changeName();
     }
     setModalVisible(false);
-    // Refresh user data after change.
     fetchUser();
   };
 

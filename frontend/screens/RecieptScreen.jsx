@@ -15,6 +15,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { parse, isValid, format } from "date-fns";
 import Constants from "expo-constants";
+import axios from "axios";
 import { handleNavigation } from "./navigationHelper";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
@@ -35,17 +36,12 @@ const ReceiptScreen = () => {
   const route = useRoute();
 
   const { expenseData, receipt, extractedData, total, tax } = route.params;
-
-  // Inputs start empty so placeholders show the extracted values.
   const [vendor, setVendor] = useState("");
   const [receiptTotal, setReceiptTotal] = useState("");
   const [receiptTax, setReceiptTax] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Create a state to store the cleaned extractedData values.
   const [cleanExtractedData, setCleanExtractedData] = useState({});
 
-  // Clean the OCR extracted total and tax as soon as the screen runs.
   useEffect(() => {
     if (extractedData) {
       setCleanExtractedData({
@@ -57,47 +53,41 @@ const ReceiptScreen = () => {
   }, [extractedData]);
 
   const handleSaveReceipt = async () => {
-    // Use the user input if provided, otherwise fall back to cleaned OCR values.
     const updatedVendor = vendor || extractedData?.company || "Default Vendor";
     const updatedTotal = receiptTotal || total || cleanExtractedData?.total || "0";
     const updatedTax = receiptTax || tax || cleanExtractedData?.tax || "0";
-
-    // Remove any non-numeric characters (except period) from total and tax (again for safety)
+  
     const cleanedTotalStr = updatedTotal.replace(/[^0-9.]/g, "");
     const cleanedTaxStr = updatedTax.replace(/[^0-9.]/g, "");
-
+  
     if (cleanedTotalStr === "" || cleanedTotalStr === "0") {
-      if (Platform.OS === "android") {
-        ToastAndroid.show("Please enter the total amount", ToastAndroid.SHORT);
-      } else {
-        Alert.alert("Missing Data", "Please enter the total amount");
-      }
+      Platform.OS === "android"
+        ? ToastAndroid.show("Please enter the total amount", ToastAndroid.SHORT)
+        : Alert.alert("Missing Data", "Please enter the total amount");
       return;
     } else if (cleanedTaxStr === "" || cleanedTaxStr === "0") {
-      if (Platform.OS === "android") {
-        ToastAndroid.show("Please enter tax", ToastAndroid.SHORT);
-      } else {
-        Alert.alert("Missing Data", "Please enter tax");
-      }
+      Platform.OS === "android"
+        ? ToastAndroid.show("Please enter tax", ToastAndroid.SHORT)
+        : Alert.alert("Missing Data", "Please enter tax");
       return;
     }
-
+  
     const parsedTotal = parseFloat(cleanedTotalStr);
     const parsedTax = parseFloat(cleanedTaxStr);
-
+  
     let formattedDate = new Date().toISOString().split("T")[0];
     if (extractedData?.date) {
       const parsedDate = parseReceiptDate(extractedData.date);
       formattedDate = format(parsedDate, "yyyy-MM-dd");
     }
-
+  
     const updatedReceiptData = {
       receipt_image: receipt,
       date_uploaded: expenseData.date,
       vendor_name: updatedVendor,
       total_amount: parsedTotal,
     };
-
+  
     const updatedExpenseData = {
       date: expenseData.date,
       expense_category: expenseData.expense_category,
@@ -106,7 +96,7 @@ const ReceiptScreen = () => {
       tax: parsedTax,
       receipt: updatedReceiptData,
     };
-
+  
     setIsSubmitting(true);
     try {
       const token = await AsyncStorage.getItem("accessToken");
@@ -115,28 +105,30 @@ const ReceiptScreen = () => {
         setIsSubmitting(false);
         return;
       }
-      const response = await fetch(`${API_URL}/expense/add_expense`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedExpenseData),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        console.log("Expense saved successfully:", data);
-        if (Platform.OS === "android") {
-          ToastAndroid.show("Expense added successfully!", ToastAndroid.SHORT);
-        } else {
-          Alert.alert("Success", "Expense added successfully!");
+  
+      const response = await axios.post(
+        `${API_URL}/expense/add_expense`,
+        updatedExpenseData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-        handleNavigation(navigation, "UserDashboard");
-      } else {
-        console.error("Error saving expense:", data.detail || data);
-      }
+      );
+  
+      console.log("Expense saved successfully:", response.data);
+      Platform.OS === "android"
+        ? ToastAndroid.show("Expense added successfully!", ToastAndroid.SHORT)
+        : Alert.alert("Success", "Expense added successfully!");
+  
+      handleNavigation(navigation, "UserDashboard");
     } catch (error) {
-      console.error("Error during API call:", error);
+      if (error.response) {
+        console.error("Error saving expense:", error.response.data.detail || error.response.data);
+      } else {
+        console.error("Error during API call:", error.message);
+      }
     }
     setIsSubmitting(false);
   };

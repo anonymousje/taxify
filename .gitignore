@@ -1278,3 +1278,4 @@ backend/model/*.safetensors
 *.cache
 node_modules/
 .env
+git-filter-repo

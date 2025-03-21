@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -33,22 +34,21 @@ const ReceiptListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/receipt/get_receipts`, {
-        method: "GET",
+  
+      const response = await axios.get(`${API_URL}/receipt/get_receipts`, {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setReceipts(data);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch receipts:", errorData);
-      }
+  
+      setReceipts(response.data);
     } catch (error) {
-      console.error("Error fetching receipts:", error);
+      if (error.response) {
+        console.error("Failed to fetch receipts:", error.response.data);
+      } else {
+        console.error("Error fetching receipts:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,6 @@ const ReceiptListScreen = () => {
     );
   }
 
-  // Filter receipts based on the vendor name (case-insensitive)
   const filteredReceipts = receipts.filter((receipt) =>
     receipt.vendor_name &&
     receipt.vendor_name.toLowerCase().includes(searchQuery.toLowerCase())

@@ -8,6 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import Constants from "expo-constants";
 import { handleNavigation } from "./navigationHelper";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -23,26 +24,27 @@ const IncomeListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/income/delete_income/${incomeId}`, {
-        method: "DELETE",
+  
+      await axios.delete(`${API_URL}/income/delete_income/${incomeId}`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        setIncome((prevIncomes) =>
-          prevIncomes.filter((income) => income.id !== incomeId)
-        );
-        Alert.alert("Success", "Income deleted successfully");
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to delete income:", errorData);
-        Alert.alert("Error", errorData.detail || "Failed to delete income");
-      }
+  
+      setIncome((prevIncomes) =>
+        prevIncomes.filter((income) => income.id !== incomeId)
+      );
+      Alert.alert("Success", "Income deleted successfully");
+  
     } catch (error) {
-      console.error("Error deleting income:", error);
-      Alert.alert("Error", "Error deleting income");
+      if (error.response) {
+        console.error("Failed to delete income:", error.response.data);
+        Alert.alert("Error", error.response.data.detail || "Failed to delete income");
+      } else {
+        console.error("Error deleting income:", error.message);
+        Alert.alert("Error", "Error deleting income");
+      }
     }
   };
 
@@ -53,24 +55,22 @@ const IncomeListScreen = () => {
         console.error("No access token found");
         return;
       }
-
-      const response = await fetch(`${API_URL}/income/get_incomes`, {
-        method: "GET",
+  
+      const response = await axios.get(`${API_URL}/income/get_incomes`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIncome(data);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch incomes:", errorData);
-      }
+  
+      setIncome(response.data);
+      
     } catch (error) {
-      console.error("Error fetching incomes:", error);
+      if (error.response) {
+        console.error("Failed to fetch incomes:", error.response.data);
+      } else {
+        console.error("Error fetching incomes:", error.message);
+      }
     } finally {
       setLoading(false);
     }

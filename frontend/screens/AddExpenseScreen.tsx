@@ -19,6 +19,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -133,7 +134,6 @@ const AddExpenseScreen = () => {
     console.log("Tax:", tax);
     console.log("Receipt:", receipt);
   
-    // Build expenseData to pass along (other fields may be needed by your backend)
     const expenseData = {
       date: format(date, "yyyy-MM-dd"),
       expense_category: selectedCategory,
@@ -153,17 +153,20 @@ const AddExpenseScreen = () => {
         });
   
         console.log("Sending receipt to model API...");
-        const receiptResponse = await fetch(`${API_URL}/receipt/extract`, {
-          method: "POST",
-          body: formData,
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const receiptResponse = await axios.post(
+          `${API_URL}/receipt/extract`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
   
-        const receiptData = await receiptResponse.json();
+        const receiptData = receiptResponse.data;
         console.log("Extracted Receipt Data:", receiptData);
         setIsParsing(false);
   
-        // Navigate to ReceiptScreen with only the required data.
         navigation.navigate("ReceiptScreen", {
           expenseData,
           receipt,
@@ -174,10 +177,13 @@ const AddExpenseScreen = () => {
         return;
       } catch (error) {
         setIsParsing(false);
-        console.error("Error extracting receipt data:", error);
+        if (error.response) {
+          console.error("Error extracting receipt data:", error.response.data);
+        } else {
+          console.error("Error extracting receipt data:", error.message);
+        }
       }
     } else {
-      // If no receipt, you might call submitExpense directly.
       submitExpense(expenseData);
     }
   };
@@ -189,23 +195,22 @@ const AddExpenseScreen = () => {
         console.error("No access token available!");
         return;
       }
-      const response = await fetch(`${API_URL}/expense/add_expense`, {
-        method: "POST",
+  
+      const response = await axios.post(`${API_URL}/expense/add_expense`, expenseData, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify(expenseData),
       });
-      const data = await response.json();
-      if (response.ok) {
-        console.log("Expense added successfully:", data);
-        navigation.goBack();
-      } else {
-        console.error("Error adding expense:", data.detail || data);
-      }
+  
+      console.log("Expense added successfully:", response.data);
+      navigation.goBack();
     } catch (error) {
-      console.error("Error during API call:", error);
+      if (error.response) {
+        console.error("Error adding expense:", error.response.data.detail || error.response.data);
+      } else {
+        console.error("Error during API call:", error.message);
+      }
     }
   };
 

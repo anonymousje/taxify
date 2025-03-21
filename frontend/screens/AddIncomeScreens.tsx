@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -66,44 +67,46 @@ const AddIncomeScreen = () => {
   const handleSave = async () => {
     const selectedCategory =
       categories.find(item => item.key === category)?.value || category;
-
+  
     console.log("Date:", format(date, "dd/MM/yyyy"));
     console.log("Category:", selectedCategory);
     console.log("Description:", description);
     console.log("Total:", total);
-
+  
     const incomeData = {
       date: format(date, "yyyy-MM-dd"),
       income_category: selectedCategory,
       description: description,
       total: parseFloat(total),
     };
-
+  
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
         console.error("No access token available!");
         return;
       }
-
-      const response = await fetch(`${API_URL}/income/add_income`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(incomeData),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        console.log("Income added successfully:", data);
-        navigation.goBack();
-      } else {
-        console.error("Error adding income:", data.detail || data);
-      }
+  
+      const response = await axios.post(
+        `${API_URL}/income/add_income`,
+        incomeData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      console.log("Income added successfully:", response.data);
+      navigation.goBack();
+  
     } catch (error) {
-      console.error("Error during API call:", error);
+      if (error.response) {
+        console.error("Error adding income:", error.response.data.detail || error.response.data);
+      } else {
+        console.error("Error during API call:", error.message);
+      }
     }
   };
 

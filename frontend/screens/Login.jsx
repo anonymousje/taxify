@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 import { handleNavigation } from './navigationHelper';
+import axios from 'axios';
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -18,23 +19,26 @@ const Login = () => {
 
     const handleLogin = async () => {
         try {
-            const response = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                await AsyncStorage.setItem('accessToken', data.access_token);
-                console.log('Logged In');
-                navigation.navigate('UserDashboard');
-            } else {
-                console.log('Login failed:', data.detail);
-            }
+          const response = await axios.post(`${API_URL}/auth/login`, {
+            email,
+            password,
+          }, {
+            headers: { 'Content-Type': 'application/json' },
+          });
+      
+          const data = response.data;
+          await AsyncStorage.setItem('accessToken', data.access_token);
+          console.log('Logged In');
+          navigation.navigate('UserDashboard');
+          
         } catch (error) {
-            console.error('Error during login:', error);
+          if (error.response) {
+            console.log('Login failed:', error.response.data.detail);
+          } else {
+            console.error('Error during login:', error.message);
+          }
         }
-    };
+      };
 
     return (
         <View className="flex-1 justify-center items-left bg-white px-6">

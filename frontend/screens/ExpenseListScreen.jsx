@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import Constants from "expo-constants";
 import { handleNavigation } from "./navigationHelper";
+import axios from "axios";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -21,22 +22,22 @@ const ExpenseListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/expense/get_expenses`, {
-        method: "GET",
+  
+      const response = await axios.get(`${API_URL}/expense/get_expenses`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setExpenses(data);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to fetch expenses:", errorData);
-      }
+  
+      setExpenses(response.data);
+  
     } catch (error) {
-      console.error("Error fetching expenses:", error);
+      if (error.response) {
+        console.error("Failed to fetch expenses:", error.response.data);
+      } else {
+        console.error("Error fetching expenses:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,26 +50,27 @@ const ExpenseListScreen = () => {
         console.error("No access token found!");
         return;
       }
-      const response = await fetch(`${API_URL}/expense/delete_expense/${expenseId}`, {
-        method: "DELETE",
+  
+      await axios.delete(`${API_URL}/expense/delete_expense/${expenseId}`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-      if (response.ok) {
-        setExpenses((prevExpenses) =>
-          prevExpenses.filter((expense) => expense.id !== expenseId)
-        );
-        Alert.alert("Success", "Expense deleted successfully");
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to delete expense:", errorData);
-        Alert.alert("Error", errorData.detail || "Failed to delete expense");
-      }
+  
+      setExpenses((prevExpenses) =>
+        prevExpenses.filter((expense) => expense.id !== expenseId)
+      );
+      Alert.alert("Success", "Expense deleted successfully");
+  
     } catch (error) {
-      console.error("Error deleting expense:", error);
-      Alert.alert("Error", "Error deleting expense");
+      if (error.response) {
+        console.error("Failed to delete expense:", error.response.data);
+        Alert.alert("Error", error.response.data.detail || "Failed to delete expense");
+      } else {
+        console.error("Error deleting expense:", error.message);
+        Alert.alert("Error", "Error deleting expense");
+      }
     }
   };
 
