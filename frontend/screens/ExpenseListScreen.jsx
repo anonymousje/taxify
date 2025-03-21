@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import Constants from "expo-constants";
+import { handleNavigation } from "./navigationHelper";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -148,7 +149,7 @@ const ExpenseListScreen = () => {
           padding: 15,
           borderRadius: 30,
         }}
-        onPress={() => navigation.navigate("AddExpenseScreen")}
+        onPress={() => handleNavigation(navigation, "AddExpenseScreen")}
       >
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>

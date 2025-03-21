@@ -69,16 +69,7 @@ const Signup = () => {
                     <Ionicons name={secure ? "eye-off" : "eye"} size={20} color="gray" />
                 </TouchableOpacity>
             </View>
-            
-            <View className="flex-row justify-between w-90 mb-4">
-                <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} className="flex-row items-center">
-                    <Ionicons name={rememberMe ? "checkbox" : "square-outline"} size={20} color="black" />
-                    <Text className="ml-2 text-gray-700">Remember Me</Text>
-                </TouchableOpacity>
-                <TouchableOpacity>
-                    <Text className="text-red-500">Forgot Password</Text>
-                </TouchableOpacity>
-            </View>
+        
 
             <TouchableOpacity onPress={handleSignup} className="bg-purple-600 w-90 h-12 rounded-md flex items-center justify-center mb-4">
                 <Text className="text-white text-lg font-bold">Sign Up</Text>

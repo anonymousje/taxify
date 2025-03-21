@@ -6,8 +6,9 @@ import {
   SafeAreaView, 
   ActivityIndicator, 
   TouchableOpacity,
+  RefreshControl,  // Added RefreshControl
 } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { 
@@ -20,6 +21,7 @@ import {
   isSameWeek,
 } from "date-fns";
 import Constants from "expo-constants";
+import { handleNavigation } from "./navigationHelper";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -32,7 +34,8 @@ const Dashboard = () => {
   const [showOptions, setShowOptions] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  
+  const [refreshing, setRefreshing] = useState(false); // For pull-to-refresh
+
   const navigation = useNavigation();
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -103,11 +106,9 @@ const Dashboard = () => {
     let data = [];
     
     try {
-      // Process data based on filter type
       if (selectedFilter === "Weekly") {
         // For weekly, show days of the week
         const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 });
-        
         data = Array(7).fill().map((_, i) => {
           const day = addDays(startOfCurrentWeek, i);
           return {
@@ -118,11 +119,10 @@ const Dashboard = () => {
             balance: 0,
             tax: 0,
             date: day,
-            hasValue: false // Track if this bar has any values
+            hasValue: false
           };
         });
         
-        // Group by day of week
         incomeData.forEach(item => {
           try {
             const date = parseISO(item.date);
@@ -141,7 +141,7 @@ const Dashboard = () => {
           try {
             const date = parseISO(item.date);
             if (isSameWeek(date, today, { weekStartsOn: 1 })) {
-              const dayIndex = (date.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+              const dayIndex = (date.getDay() + 6) % 7;
               data[dayIndex].expense += item.total || 0;
               data[dayIndex].tax += item.tax || 0;
               data[dayIndex].hasValue = true;
@@ -152,7 +152,6 @@ const Dashboard = () => {
         });
         
       } else { // Monthly
-        // For monthly, show months
         data = Array(12).fill().map((_, i) => ({
           label: monthNames[i],
           income: 0,
@@ -160,10 +159,9 @@ const Dashboard = () => {
           balance: 0,
           tax: 0,
           month: i,
-          hasValue: false // Track if this bar has any values
+          hasValue: false
         }));
         
-        // Group by month
         incomeData.forEach(item => {
           try {
             const date = parseISO(item.date);
@@ -189,10 +187,8 @@ const Dashboard = () => {
         });
       }
       
-      // Calculate balance for all data points
       data.forEach(item => {
         item.balance = item.income - item.expense;
-        // Update hasValue flag if the item has income or expense
         if (item.income > 0 || item.expense > 0) {
           item.hasValue = true;
         }
@@ -200,45 +196,44 @@ const Dashboard = () => {
       
       setChartData(data);
       
-      // Set default selected index
       if (selectedFilter === "Weekly") {
         const todayIndex = data.findIndex(d => 
           d.date && isSameDay(d.date, today)
         );
         setSelectedIndex(todayIndex !== -1 ? todayIndex : 0);
-      } else { // Monthly
-        setSelectedIndex(today.getMonth()); // Current month
+      } else {
+        setSelectedIndex(today.getMonth());
       }
     } catch (error) {
       console.error("Error processing chart data:", error);
       setChartData([]);
     }
+  }, [dayNames, monthNames]);
+
+  // Fetch data function used for both initial load and refresh
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [incomeData, expenseData] = await Promise.all([fetchIncome(), fetchExpenses()]);
+      processChartData(incomeData || [], expenseData || [], filter);
+    } catch (err) {
+      console.error("Error loading data:", err);
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data load on component mount
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  // Update chart data when filter changes
-  useEffect(() => {
-    if (income.length > 0 && expenses.length > 0) {
-      processChartData(income, expenses, filter);
-    }
-  }, [filter, income, expenses]);
-
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      
-      Promise.all([fetchIncome(), fetchExpenses()])
-        .then(([incomeData, expenseData]) => {
-          // Initial process with Weekly view
-          processChartData(incomeData || [], expenseData || [], filter);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Error loading data:", err);
-          setError("Failed to load data");
-          setLoading(false);
-        });
-    }, [])
-  );
+  // Handler for pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [filter, processChartData]);
 
   const totalIncome = income.reduce((sum, item) => sum + (item.total || 0), 0);
   const totalExpenses = expenses.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -251,7 +246,6 @@ const Dashboard = () => {
       ...expenses.map(item => ({...item, type: 'expense'}))
     ];
     
-    // Filter transactions based on selected time filter
     const today = new Date();
     let filteredTransactions = combined;
     
@@ -264,9 +258,8 @@ const Dashboard = () => {
           return false;
         }
       });
-    } // No filter for Monthly - show all
+    }
     
-    // Sort by date, most recent first
     return filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
@@ -331,47 +324,30 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) return (
-    <View className="flex-1 justify-center items-center bg-gray-100">
-      <ActivityIndicator size="large" color="#5B21B6" />
-    </View>
-  );
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <ActivityIndicator size="large" color="#5B21B6" />
+      </View>
+    );
+  }
   
-  if (error) return (
-    <View className="flex-1 justify-center items-center bg-gray-100">
-      <Text className="text-red-500">{error}</Text>
-    </View>
-  );
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-red-500">{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {showOptions && (
-        <View className="absolute z-50 inset-0 bg-black/50 justify-center items-center">
-          <View className="bg-white p-5 rounded-lg w-64 items-center">
-            <TouchableOpacity
-              className="my-3 py-2 w-full items-center"
-              onPress={() => {
-                setShowOptions(false);
-                navigation.navigate('IncomeListScreen');
-              }}
-            >
-              <Text className="text-lg">Add Income</Text>
-            </TouchableOpacity>
-            <View className="h-px w-full bg-gray-200" />
-            <TouchableOpacity
-              className="my-3 py-2 w-full items-center"
-              onPress={() => {
-                setShowOptions(false);
-                navigation.navigate('ExpenseListScreen');
-              }}
-            >
-              <Text className="text-lg">Add Expense</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-      
-      <ScrollView className="flex-1 mb-16">
+      <ScrollView
+        className="flex-1 mb-16"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View className="p-5">
           {/* Balance Section */}
           <View className="mb-4">
@@ -435,7 +411,7 @@ const Dashboard = () => {
             </View>
           </View>
 
-          {/* Filter Buttons - Modified to only show Weekly and Monthly */}
+          {/* Filter Buttons */}
           <View className="flex-row mb-5 justify-center">
             <TouchableOpacity 
               className={`py-2 px-6 rounded-full mr-2 ${filter === 'Weekly' ? 'bg-purple-200' : 'bg-gray-200'}`}
@@ -453,8 +429,6 @@ const Dashboard = () => {
 
           {/* Transactions List */}
           <Text className="text-lg font-semibold mb-3">{filter}</Text>
-
-          {/* Group transactions by date */}
           {transactions.length > 0 ? (
             <>
               {transactions.map((item, index) => {
@@ -515,10 +489,10 @@ const Dashboard = () => {
         
         <TouchableOpacity 
           className="flex-1 items-center justify-center"
-          onPress={() => navigation.navigate("MainMenu")}
+          onPress={() => handleNavigation(navigation, "TaxForm")}
         >
           <Ionicons name="menu" size={22} color="#6B7280" />
-          <Text className="text-xs text-gray-500">Main Menu</Text>
+          <Text className="text-xs text-gray-500">Tax Form</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -530,7 +504,7 @@ const Dashboard = () => {
         
         <TouchableOpacity 
           className="flex-1 items-center justify-center"
-          onPress={() => navigation.navigate("ReceiptListScreen")}
+          onPress={() => handleNavigation(navigation, "ReceiptListScreen")}
         >
           <Ionicons name="receipt" size={22} color="#6B7280" />
           <Text className="text-xs text-gray-500">Receipts</Text>
@@ -538,12 +512,39 @@ const Dashboard = () => {
         
         <TouchableOpacity 
           className="flex-1 items-center justify-center"
-          onPress={() => navigation.navigate("Settings")}
+          onPress={() => handleNavigation(navigation, "Settings")}
         >
           <Ionicons name="settings" size={22} color="#6B7280" />
           <Text className="text-xs text-gray-500">Settings</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Options Modal */}
+      {showOptions && (
+        <View className="absolute z-50 inset-0 bg-black/50 justify-center items-center">
+          <View className="bg-white p-5 rounded-lg w-64 items-center">
+            <TouchableOpacity
+              className="my-3 py-2 w-full items-center"
+              onPress={() => {
+                setShowOptions(false);
+                handleNavigation(navigation, "IncomeListScreen");
+              }}
+            >
+              <Text className="text-lg">Add Income</Text>
+            </TouchableOpacity>
+            <View className="h-px w-full bg-gray-200" />
+            <TouchableOpacity
+              className="my-3 py-2 w-full items-center"
+              onPress={() => {
+                setShowOptions(false);
+                handleNavigation(navigation, "ExpenseListScreen");
+              }}
+            >
+              <Text className="text-lg">Add Expense</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

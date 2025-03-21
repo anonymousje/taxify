@@ -7,6 +7,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import Constants from "expo-constants";
+import { handleNavigation } from "./navigationHelper";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -158,7 +159,7 @@ const IncomeListScreen = () => {
           padding: 15,
           borderRadius: 30,
         }}
-        onPress={() => navigation.navigate("AddIncomeScreen")}
+        onPress={() => handleNavigation(navigation, "AddIncomeScreen")}
       >
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>

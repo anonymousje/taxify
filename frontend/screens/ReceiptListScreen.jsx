@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { useNavigation } from "@react-navigation/native";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -19,6 +20,8 @@ const ReceiptListScreen = () => {
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  const navigation = useNavigation();
+
   useEffect(() => {
     fetchReceipts();
   }, []);
@@ -59,13 +62,19 @@ const ReceiptListScreen = () => {
     );
   }
 
+  // Filter receipts based on the vendor name (case-insensitive)
+  const filteredReceipts = receipts.filter((receipt) =>
+    receipt.vendor_name &&
+    receipt.vendor_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={{ flex: 1, padding: 20 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 10 }}>Receipts</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#EEE", padding: 8, borderRadius: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#EEE", padding: 8, borderRadius: 10, marginBottom: 10 }}>
         <TextInput
           style={{ flex: 1, padding: 8 }}
-          placeholder="Abhi ke liye placeholder, will see later kiya karna"
+          placeholder="Search by vendor name"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -73,17 +82,22 @@ const ReceiptListScreen = () => {
       </View>
 
       <FlatList
-        data={receipts}
+        data={filteredReceipts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={{ flexDirection: "row", alignItems: "center", padding: 10, borderBottomWidth: 1, borderColor: "#DDD" }}>
-            <Image source={{ uri: item.receipt_image }} style={{ width: 50, height: 50, borderRadius: 5 }} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.vendor_name}</Text>
-              <Text style={{ color: "gray" }}>{item.date_uploaded}</Text>
-              <Text style={{ fontWeight: "bold" }}>${item.total_amount.toFixed(2)}</Text>
+          <TouchableOpacity
+            // Pass the entire receipt object along with the tax field to the details screen
+            onPress={() => navigation.navigate("ReceiptDetailScreen", { receipt: item, tax: item.tax })}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", padding: 10, borderBottomWidth: 1, borderColor: "#DDD" }}>
+              <Image source={{ uri: item.receipt_image }} style={{ width: 50, height: 50, borderRadius: 5 }} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.vendor_name}</Text>
+                <Text style={{ color: "gray" }}>{item.date_uploaded}</Text>
+                <Text style={{ fontWeight: "bold" }}>${item.total_amount.toFixed(2)}</Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>

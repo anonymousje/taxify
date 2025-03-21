@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { 
-  View, Text, TextInput, TouchableOpacity, Alert, Modal, ActivityIndicator, TouchableWithoutFeedback, Keyboard
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  Modal, 
+  ActivityIndicator, 
+  TouchableWithoutFeedback, 
+  Keyboard
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -11,9 +19,14 @@ const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 const SettingsScreen = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
   const [modalVisible, setModalVisible] = useState(false);
-  const [inputValue, setInputValue] = useState("");
   const [editField, setEditField] = useState("");
+  
+  // Separate state variables for each field
+  const [nameInput, setNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   useEffect(() => {
@@ -51,97 +64,107 @@ const SettingsScreen = () => {
 
   const changePassword = async () => {
     try {
-        const token = await AsyncStorage.getItem("accessToken");
-        if (!token) {
-            console.error("No access token found!");
-            return;
-        }
-        const response = await fetch(`${API_URL}/auth/change_password`, {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ "new_password": inputValue }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            console.log('Password Changed');
-        } else {
-            console.log('Password Change Failed:', data.detail);
-        }
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found!");
+        return;
+      }
+      const response = await fetch(`${API_URL}/auth/change_password`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ "new_password": passwordInput }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Password Changed');
+      } else {
+        console.log('Password Change Failed:', data.detail);
+      }
     } catch (error) {
-        console.error('Error during password change:', error);
+      console.error('Error during password change:', error);
     }
   };
 
   const changeEmail = async () => {
     try {
-        const token = await AsyncStorage.getItem("accessToken");
-        if (!token) {
-            console.error("No access token found!");
-            return;
-        }
-        const response = await fetch(`${API_URL}/auth/change_email`, {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ "new_email": inputValue }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            console.log('Email Changed');
-        } else {
-            console.log('Email Change Failed:', data.detail);
-        }
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found!");
+        return;
+      }
+      const response = await fetch(`${API_URL}/auth/change_email`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ "new_email": emailInput }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Email Changed');
+      } else {
+        console.log('Email Change Failed:', data.detail);
+      }
     } catch (error) {
-        console.error('Error during email change:', error);
+      console.error('Error during email change:', error);
     }
   };
 
   const changeName = async () => {
     try {
-        const token = await AsyncStorage.getItem("accessToken");
-        if (!token) {
-            console.error("No access token found!");
-            return;
-        }
-        const response = await fetch(`${API_URL}/auth/change_name`, {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ "new_name": inputValue }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            console.log('Name Changed');
-        } else {
-            console.log('Name Change Failed:', data.detail);
-        }
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found!");
+        return;
+      }
+      const response = await fetch(`${API_URL}/auth/change_name`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ "new_name": nameInput }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Name Changed');
+      } else {
+        console.log('Name Change Failed:', data.detail);
+      }
     } catch (error) {
-        console.error('Error during name change:', error);
+      console.error('Error during name change:', error);
     }
   };
 
-
+  // When opening the edit modal, set the corresponding state explicitly.
   const handleEdit = (field) => {
     setEditField(field);
-    setInputValue(field === "password" ? "" : user[field]);
+    if (field === "name") {
+      setNameInput(user.name);
+    } else if (field === "email") {
+      setEmailInput(user.email);
+    } else if (field === "password") {
+      setPasswordInput("");
+    }
     setPasswordVisible(false);
     setModalVisible(true);
   };
 
   const saveChanges = async () => {
-    if (editField === "email")
-        changeEmail()
-    else if(editField === "password")
-        changePassword()
-    else
-        changeName()
+    if (editField === "email") {
+      await changeEmail();
+    } else if (editField === "password") {
+      await changePassword();
+    } else if (editField === "name") {
+      await changeName();
+    }
+    setModalVisible(false);
+    // Refresh user data after change.
+    fetchUser();
   };
 
   if (loading) {
@@ -161,7 +184,6 @@ const SettingsScreen = () => {
   }
 
   return (
-    
     <View style={{ flex: 1, padding: 20, backgroundColor: "white" }}>
       <Text style={{ fontSize: 24, fontWeight: "bold" }}>Settings</Text>
 
@@ -204,45 +226,59 @@ const SettingsScreen = () => {
       </View>
 
       {/* Edit Pop-up Modal */}
-        <Modal visible={modalVisible} transparent animationType="slide">
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: "white", padding: 20, borderRadius: 10, width: "75%" }}>
-                <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Update {editField}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#ddd", padding: 8, borderRadius: 8, marginBottom: 20 }}>
-                <TextInput 
-                    style={{ flex: 1 }}
-                    value={inputValue}
-                    onChangeText={setInputValue}
-                    secureTextEntry={editField === "password" && !passwordVisible}
-                    placeholder={editField === "password" ? "Enter new password" : undefined}
-                />
-                {editField === "password" && (
-                    <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-                    <Ionicons 
-                        name={passwordVisible ? "eye-off" : "eye"} 
-                        size={20} 
-                        color="gray" 
-                    />
-                    </TouchableOpacity>
-                )}
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <TouchableOpacity 
-                    style={{ padding: 12, backgroundColor: "#ddd", borderRadius: 8 }}
-                    onPress={() => setModalVisible(false)}
-                >
-                    <Text>Cancel</Text>
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View style={{ backgroundColor: "white", padding: 20, borderRadius: 10, width: "75%" }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+              Update {editField}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#ddd", padding: 8, borderRadius: 8, marginBottom: 20 }}>
+              <TextInput 
+                style={{ flex: 1 }}
+                value={
+                  editField === "name"
+                    ? nameInput
+                    : editField === "email"
+                      ? emailInput
+                      : passwordInput
+                }
+                onChangeText={
+                  editField === "name"
+                    ? setNameInput
+                    : editField === "email"
+                      ? setEmailInput
+                      : setPasswordInput
+                }
+                secureTextEntry={editField === "password" && !passwordVisible}
+                placeholder={editField === "password" ? "Enter new password" : undefined}
+              />
+              {editField === "password" && (
+                <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                  <Ionicons 
+                    name={passwordVisible ? "eye-off" : "eye"} 
+                    size={20} 
+                    color="gray" 
+                  />
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={{ padding: 12, backgroundColor: "purple", borderRadius: 8 }}
-                    onPress={saveChanges}
-                >
-                    <Text style={{ color: "white" }}>Save</Text>
-                </TouchableOpacity>
-                </View>
+              )}
             </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <TouchableOpacity 
+                style={{ padding: 12, backgroundColor: "#ddd", borderRadius: 8 }}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{ padding: 12, backgroundColor: "purple", borderRadius: 8 }}
+                onPress={saveChanges}
+              >
+                <Text style={{ color: "white" }}>Save</Text>
+              </TouchableOpacity>
             </View>
-        </Modal>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

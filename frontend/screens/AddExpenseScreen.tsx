@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
   Modal,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { format } from "date-fns";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
@@ -22,6 +23,9 @@ import Constants from "expo-constants";
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddExpenseScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  
   const [date, setDate] = useState(new Date());
   const [category, setCategory] = useState("Bill & Utility");
   const [description, setDescription] = useState("");
@@ -29,12 +33,36 @@ const AddExpenseScreen = () => {
   const [tax, setTax] = useState("");
   const [receipt, setReceipt] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const navigation = useNavigation();
-
+  const [isParsing, setIsParsing] = useState(false);
+  
+  // Update state if ReceiptScreen returns updated receipt data.
+  useEffect(() => {
+    if (route.params?.updatedReceiptData) {
+      const { updatedReceiptData, total: newTotal, tax: newTax } = route.params;
+      setReceipt(updatedReceiptData.receipt_image);
+      if (newTotal) setTotal(newTotal);
+      if (newTax) setTax(newTax);
+      navigation.setParams({ updatedReceiptData: undefined });
+    }
+  }, [route.params]);
+  
   const categories = [
-    { key: "1", value: "Bill & Utility" },
-    { key: "2", value: "Groceries" },
-    { key: "3", value: "Transport" },
+    { key: "1", value: "Rent" },
+    { key: "2", value: "Rates / Taxes / Charge / Cess" },
+    { key: "3", value: "Vehicle Running / Maintenance" },
+    { key: "4", value: "Travelling" },
+    { key: "5", value: "Electricity" },
+    { key: "6", value: "Water" },
+    { key: "7", value: "Gas" },
+    { key: "8", value: "Telephone" },
+    { key: "9", value: "Asset Insurance / Security" },
+    { key: "10", value: "Medical" },
+    { key: "11", value: "Educational" },
+    { key: "12", value: "Club" },
+    { key: "13", value: "Functions / Gatherings" },
+    { key: "14", value: "Donation, Zakat, Annuity, Profit on Debt, Life Insurance Premium, etc." },
+    { key: "15", value: "Other Personal / Household Expenses" },
+    { key: "16", value: "Contribution in Expenses by Family Members" },
   ];
 
   const openDatePicker = () => {
@@ -42,6 +70,7 @@ const AddExpenseScreen = () => {
       setShowDatePicker(true);
     } else {
       try {
+        // For Android, use the built-in DateTimePickerAndroid API
         const { DateTimePickerAndroid } = require("@react-native-community/datetimepicker");
         DateTimePickerAndroid.open({
           value: date,
@@ -60,7 +89,10 @@ const AddExpenseScreen = () => {
 
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
-    setShowDatePicker(Platform.OS === "ios");
+    // For iOS, keep the modal open until user presses Done/Cancel
+    if (Platform.OS !== "ios") {
+      setShowDatePicker(false);
+    }
     setDate(currentDate);
   };
 
@@ -70,19 +102,14 @@ const AddExpenseScreen = () => {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       console.log("Permission status:", permissionResult.status);
       if (permissionResult.status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Sorry, we need access to your gallery to pick an image."
-        );
+        Alert.alert("Permission Denied", "Sorry, we need access to your gallery to pick an image.");
         return;
       }
-      
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 1,
       });
-      
       console.log("Image picker result:", result);
       if (!result.canceled) {
         console.log("Selected image URI:", result.assets[0].uri);
@@ -95,22 +122,29 @@ const AddExpenseScreen = () => {
     }
   };
 
+  // On Save, if a receipt is present, extract receipt data and navigate to ReceiptScreen.
   const handleSave = async () => {
-    const selectedCategory =
-      categories.find((item) => item.key === category)?.value || category;
-  
+    const selectedCategory = categories.find(item => item.key === category)?.value || category;
     console.log("Expense Details:");
-    console.log("📅 Date:", format(date, "dd/MM/yyyy"));
-    console.log("📂 Category:", selectedCategory);
-    console.log("📝 Description:", description || "No description provided");
-    console.log("💰 Total:", total || "No total entered");
-    console.log("💰 Tax:", tax || "No tax entered");
-    console.log("📷 Receipt:", receipt || "No receipt selected");
+    console.log("Date:", format(date, "dd/MM/yyyy"));
+    console.log("Category:", selectedCategory);
+    console.log("Description:", description);
+    console.log("Total:", total);
+    console.log("Tax:", tax);
+    console.log("Receipt:", receipt);
   
-    let extractedData = {};
+    // Build expenseData to pass along (other fields may be needed by your backend)
+    const expenseData = {
+      date: format(date, "yyyy-MM-dd"),
+      expense_category: selectedCategory,
+      description: description,
+      total: parseFloat(total),
+      tax: parseFloat(tax),
+    };
   
     if (receipt) {
       try {
+        setIsParsing(true);
         const formData = new FormData();
         formData.append("file", {
           uri: receipt,
@@ -122,51 +156,39 @@ const AddExpenseScreen = () => {
         const receiptResponse = await fetch(`${API_URL}/receipt/extract`, {
           method: "POST",
           body: formData,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         });
   
         const receiptData = await receiptResponse.json();
-        console.log("📜 Extracted Receipt Data:", receiptData);
+        console.log("Extracted Receipt Data:", receiptData);
+        setIsParsing(false);
   
-        // Use extracted values if available
-        // extractedData = {
-        //   company: receiptData.company || "Unknown Vendor",
-        //   total: receiptData.total || total,
-        //   tax: receiptData.tax || tax,
-        //   description: `Receipt from ${receiptData.company || "Unknown Vendor"}`,
-        // };
+        // Navigate to ReceiptScreen with only the required data.
+        navigation.navigate("ReceiptScreen", {
+          expenseData,
+          receipt,
+          extractedData: receiptData,
+          total,
+          tax,
+        });
+        return;
       } catch (error) {
+        setIsParsing(false);
         console.error("Error extracting receipt data:", error);
       }
+    } else {
+      // If no receipt, you might call submitExpense directly.
+      submitExpense(expenseData);
     }
-  
-    // Combine extracted data with user inputs
-    const expenseData = {
-      date: format(date, "yyyy-MM-dd"),
-      expense_category: selectedCategory,
-      description: description || description,
-      total: parseFloat(total || total),
-      tax: parseFloat(tax || tax),
-    };
-  
-    if (receipt) {
-      expenseData.receipt = {
-        receipt_image: receipt,
-        date_uploaded: format(new Date(), "yyyy-MM-dd"),
-        vendor_name: "Default Vendor",
-        total_amount: parseFloat(total),
-      };
-    }
-  
+  };
+
+  const submitExpense = async (expenseData) => {
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
         console.error("No access token available!");
         return;
       }
-  
       const response = await fetch(`${API_URL}/expense/add_expense`, {
         method: "POST",
         headers: {
@@ -175,28 +197,29 @@ const AddExpenseScreen = () => {
         },
         body: JSON.stringify(expenseData),
       });
-  
       const data = await response.json();
       if (response.ok) {
-        console.log("✅ Expense added successfully:", data);
+        console.log("Expense added successfully:", data);
         navigation.goBack();
       } else {
-        console.error("❌ Error adding expense:", data.detail || data);
+        console.error("Error adding expense:", data.detail || data);
       }
     } catch (error) {
       console.error("Error during API call:", error);
     }
   };
-  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View className="flex-1 bg-white p-4">
         {/* Header */}
-        <Text className="text-center text-xl font-semibold mb-6">
-          Add New Expense
-        </Text>
-
+        <View className="flex-row items-center mb-6">
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text className="text-2xl">←</Text>
+          </TouchableOpacity>
+          <Text className="text-xl font-medium ml-4">Add New Expense</Text>
+        </View>
+  
         {/* Date Picker */}
         <TouchableOpacity
           onPress={openDatePicker}
@@ -205,38 +228,45 @@ const AddExpenseScreen = () => {
           <Text>{format(date, "dd/MM/yyyy")}</Text>
           <Text>📅</Text>
         </TouchableOpacity>
-
+  
         {/* iOS Date Picker Modal */}
         {Platform.OS === "ios" && showDatePicker && (
-          <Modal
-            transparent={true}
-            animationType="slide"
-            visible={showDatePicker}
-            onRequestClose={() => setShowDatePicker(false)}
-          >
-            <View className="flex-1 justify-end">
-              <View className="bg-white p-4">
-                <View className="flex-row justify-between mb-4">
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Text className="text-purple-700">Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Text className="text-purple-700">Done</Text>
-                  </TouchableOpacity>
-                </View>
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={date}
-                  mode="date"
-                  is24Hour={true}
-                  display="spinner"
-                  onChange={handleDateChange}
-                />
+        <Modal
+          transparent={true}
+          animationType="slide"
+          visible={showDatePicker}
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={{ flex: 1, justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: "white", padding: 20 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Done</Text>
+                </TouchableOpacity>
               </View>
+              
+              {/* Display selected date above the picker */}
+              <Text style={{ textAlign: "center", marginBottom: 10, fontSize: 16 }}>
+                {format(date, "dd/MM/yyyy")}
+              </Text>
+              
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={date}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                textColor="#000"        
+                themeVariant="light"   
+              />
             </View>
-          </Modal>
+          </View>
+        </Modal>
         )}
-
+  
         {/* Category Selector */}
         <SelectList
           setSelected={(selectedKey) => {
@@ -244,7 +274,7 @@ const AddExpenseScreen = () => {
             setCategory(selectedValue || selectedKey);
           }}
           data={categories}
-          defaultOption={{ key: "1", value: "Bill & Utility" }}
+          defaultOption={{ key: "1", value: "Rent" }}
           boxStyles={{
             backgroundColor: "#E5E7EB",
             borderWidth: 0,
@@ -256,16 +286,16 @@ const AddExpenseScreen = () => {
             borderWidth: 0,
           }}
         />
-
+  
         {/* Description Input */}
         <TextInput
-          placeholder="Description (Optional)"
+          placeholder="Description"
           className="bg-gray-300 p-4 rounded-lg mt-4"
           value={description}
           onChangeText={setDescription}
           onBlur={Keyboard.dismiss}
         />
-
+  
         {/* Total Input */}
         <TextInput
           placeholder="Total"
@@ -275,7 +305,7 @@ const AddExpenseScreen = () => {
           onChangeText={setTotal}
           onBlur={Keyboard.dismiss}
         />
-
+  
         {/* Tax Input */}
         <TextInput
           placeholder="Tax"
@@ -285,7 +315,7 @@ const AddExpenseScreen = () => {
           onChangeText={setTax}
           onBlur={Keyboard.dismiss}
         />
-
+  
         {/* Receipt Images Section */}
         <Text className="mt-4 mb-2 text-gray-500">Expense receipt images</Text>
         <View className="flex-row justify-between">
@@ -303,7 +333,7 @@ const AddExpenseScreen = () => {
             )}
           </TouchableOpacity>
         </View>
-
+  
         {/* Action Buttons */}
         <View className="flex-row justify-between mt-6">
           <TouchableOpacity
@@ -319,6 +349,23 @@ const AddExpenseScreen = () => {
             <Text className="text-center text-white">Save</Text>
           </TouchableOpacity>
         </View>
+  
+        {/* Loader Modal for Parsing Receipt Data */}
+        {isParsing && (
+          <View style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}>
+            <ActivityIndicator size="large" color="white" />
+            <Text style={{ color: "white", marginTop: 10 }}>Parsing Receipt Data</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

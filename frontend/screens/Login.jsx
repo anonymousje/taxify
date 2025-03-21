@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
+import { handleNavigation } from './navigationHelper';
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -81,7 +82,7 @@ const Login = () => {
 
             <View className='flex-row justify-center items-center w-90 mt-6 mb-6'>
                 <Text className="text-gray-600">Don’t have an account?</Text>
-                <TouchableOpacity onPress={()=>navigation.navigate('Signup')}>
+                <TouchableOpacity onPress={()=>handleNavigation(navigation, "Signup")}>
                     <Text className="text-purple-600 ml-2 font-bold"> Sign Up </Text>
                 </TouchableOpacity>
             </View>
