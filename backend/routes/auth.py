@@ -125,7 +125,7 @@ def change_user_password(user: ChangeUserName, db: Session = Depends(get_db), cu
             "User with this ID does not exist",
         )
 
-    user_db.email = user.new_name
+    user_db.name = user.new_name
 
     db.commit()
     db.refresh(user_db)

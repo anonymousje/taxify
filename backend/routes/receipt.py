@@ -77,4 +77,18 @@ def get_receipt_for_user(db: Session = Depends(get_db), current_user: User = Dep
     receipt_list = db.query(Receipt).filter(
         Receipt.user_id == current_user.id).all()
 
-    return receipt_list
+    results = []
+    for receipt in receipt_list:
+        receipt_data = {
+            "id": receipt.id,
+            "user_id": receipt.user_id,
+            "expense_id": receipt.expense_id,
+            "receipt_image": receipt.receipt_image,
+            "date_uploaded": receipt.date_uploaded,
+            "vendor_name": receipt.vendor_name,
+            "total_amount": receipt.total_amount,
+            "tax": receipt.expense.tax if receipt.expense else None,
+        }
+        results.append(receipt_data)
+
+    return results
