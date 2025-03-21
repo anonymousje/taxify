@@ -1273,3 +1273,8 @@ MigrationBackup/
 
 # End of https://www.toptal.com/developers/gitignore/api/reactnative,vs,python,virtualenv
 
+backend/model/*.safetensors
+*.log
+*.cache
+node_modules/
+.env
