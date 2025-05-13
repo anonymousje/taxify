@@ -8,7 +8,6 @@ import {
   Keyboard,
   Platform,
   Modal,
-  Alert,
   Image,
   ActivityIndicator,
 } from "react-native";
@@ -20,13 +19,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import axios from "axios";
+import Toast from "react-native-toast-message";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddExpenseScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  
+
   const [date, setDate] = useState(new Date());
   const [category, setCategory] = useState("Bill & Utility");
   const [description, setDescription] = useState("");
@@ -35,8 +35,7 @@ const AddExpenseScreen = () => {
   const [receipt, setReceipt] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  
-  // Update state if ReceiptScreen returns updated receipt data.
+
   useEffect(() => {
     if (route.params?.updatedReceiptData) {
       const { updatedReceiptData, total: newTotal, tax: newTax } = route.params;
@@ -46,7 +45,7 @@ const AddExpenseScreen = () => {
       navigation.setParams({ updatedReceiptData: undefined });
     }
   }, [route.params]);
-  
+
   const categories = [
     { key: "1", value: "Rent" },
     { key: "2", value: "Rates / Taxes / Charge / Cess" },
@@ -71,7 +70,6 @@ const AddExpenseScreen = () => {
       setShowDatePicker(true);
     } else {
       try {
-        // For Android, use the built-in DateTimePickerAndroid API
         const { DateTimePickerAndroid } = require("@react-native-community/datetimepicker");
         DateTimePickerAndroid.open({
           value: date,
@@ -90,7 +88,6 @@ const AddExpenseScreen = () => {
 
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
-    // For iOS, keep the modal open until user presses Done/Cancel
     if (Platform.OS !== "ios") {
       setShowDatePicker(false);
     }
@@ -98,134 +95,156 @@ const AddExpenseScreen = () => {
   };
 
   const pickImage = async () => {
-    console.log("pickImage called");
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log("Permission status:", permissionResult.status);
       if (permissionResult.status !== "granted") {
-        Alert.alert("Permission Denied", "Sorry, we need access to your gallery to pick an image.");
+        Toast.show({
+          type: "error",
+          text1: "Permission Denied",
+          text2: "We need access to your gallery."
+        });
         return;
       }
-      let result = await ImagePicker.launchImageLibraryAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         quality: 1,
       });
-      console.log("Image picker result:", result);
       if (!result.canceled) {
-        console.log("Selected image URI:", result.assets[0].uri);
         setReceipt(result.assets[0].uri);
-      } else {
-        console.log("Image picker canceled");
       }
     } catch (error) {
-      console.error("Error in pickImage:", error);
+      Toast.show({
+        type: "error",
+        text1: "Image Picker Error",
+        text2: error.message,
+      });
     }
   };
 
-  // On Save, if a receipt is present, extract receipt data and navigate to ReceiptScreen.
   const handleSave = async () => {
-    const selectedCategory = categories.find(item => item.key === category)?.value || category;
-    console.log("Expense Details:");
-    console.log("Date:", format(date, "dd/MM/yyyy"));
-    console.log("Category:", selectedCategory);
-    console.log("Description:", description);
-    console.log("Total:", total);
-    console.log("Tax:", tax);
-    console.log("Receipt:", receipt);
-  
-    const expenseData = {
-      date: format(date, "yyyy-MM-dd"),
-      expense_category: selectedCategory,
-      description: description,
-      total: parseFloat(total),
-      tax: parseFloat(tax),
-    };
-  
-    if (receipt) {
-      try {
-        setIsParsing(true);
-        const formData = new FormData();
-        formData.append("file", {
-          uri: receipt,
-          name: "receipt.jpg",
-          type: "image/jpeg",
-        });
-  
-        console.log("Sending receipt to model API...");
-        const receiptResponse = await axios.post(
-          `${API_URL}/receipt/extract`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-  
-        const receiptData = receiptResponse.data;
-        console.log("Extracted Receipt Data:", receiptData);
-        setIsParsing(false);
-  
-        navigation.navigate("ReceiptScreen", {
-          expenseData,
-          receipt,
-          extractedData: receiptData,
-          total,
-          tax,
-        });
-        return;
-      } catch (error) {
-        setIsParsing(false);
-        if (error.response) {
-          console.error("Error extracting receipt data:", error.response.data);
-        } else {
-          console.error("Error extracting receipt data:", error.message);
-        }
-      }
-    } else {
-      submitExpense(expenseData);
+    Keyboard.dismiss();
+
+    const parsedTotal = parseFloat(total);
+    const parsedTax = parseFloat(tax);
+
+    if (!receipt && (!total || isNaN(parsedTotal) || parsedTotal <= 0)) {
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Total amount is required and must be greater than zero if no receipt image is attached.",
+      });
+      return;
     }
+
+  if (tax !== '' && (isNaN(parsedTax) || parsedTax < 0)) {
+    Toast.show({
+      type: "error",
+      text1: "Validation Error",
+      text2: "Tax must be a non-negative number.",
+    });
+    return;
+  }
+
+
+  const selectedCategory = categories.find(item => item.key === category)?.value || category;
+
+  const expenseData = {
+    date: format(date, "yyyy-MM-dd"),
+    expense_category: selectedCategory,
+    description,
+    total: parsedTotal || 0,
+    tax: tax ? parsedTax : 0,
   };
+
+  if (receipt) {
+    try {
+      setIsParsing(true);
+      const formData = new FormData();
+      formData.append("file", {
+        uri: receipt,
+        name: "receipt.jpg",
+        type: "image/jpeg",
+      });
+
+      const receiptResponse = await axios.post(`${API_URL}/receipt/extract`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const receiptData = receiptResponse.data;
+      setIsParsing(false);
+
+      navigation.navigate("ReceiptScreen", {
+        expenseData,
+        receipt,
+        extractedData: receiptData,
+        total,
+        tax,
+      });
+      return;
+    } catch (error) {
+      setIsParsing(false);
+      Toast.show({
+        type: "error",
+        text1: "Receipt Error",
+        text2: error.response?.data || error.message
+      });
+    }
+  } else {
+    submitExpense(expenseData);
+  }
+};
+
 
   const submitExpense = async (expenseData) => {
+    Keyboard.dismiss();
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
-        console.error("No access token available!");
+        Toast.show({
+          type: "error",
+          text1: "Authentication Required",
+          text2: "Please log in first."
+        });
         return;
       }
-  
+
       const response = await axios.post(`${API_URL}/expense/add_expense`, expenseData, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
-  
-      console.log("Expense added successfully:", response.data);
-      navigation.goBack();
+
+      Toast.show({
+        type: "success",
+        text1: "Expense Added",
+        text2: "Your expense was saved successfully."
+      });
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
     } catch (error) {
-      if (error.response) {
-        console.error("Error adding expense:", error.response.data.detail || error.response.data);
-      } else {
-        console.error("Error during API call:", error.message);
-      }
+      Toast.show({
+        type: "error",
+        text1: "Submission Error",
+        text2: error.response?.data?.detail || error.message
+      });
     }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View className="flex-1 bg-white p-4">
-        {/* Header */}
-        <View className="flex-row items-center mb-6">
+    <>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View className="flex-1 bg-white p-4">
+          <View className="flex-row items-center mb-6">
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text className="text-2xl">←</Text>
           </TouchableOpacity>
           <Text className="text-xl font-medium ml-4">Add New Expense</Text>
         </View>
-  
-        {/* Date Picker */}
+
         <TouchableOpacity
           onPress={openDatePicker}
           className="bg-gray-300 p-4 rounded-lg mb-4 flex-row justify-between items-center"
@@ -233,46 +252,40 @@ const AddExpenseScreen = () => {
           <Text>{format(date, "dd/MM/yyyy")}</Text>
           <Text>📅</Text>
         </TouchableOpacity>
-  
-        {/* iOS Date Picker Modal */}
+
         {Platform.OS === "ios" && showDatePicker && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={showDatePicker}
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={{ flex: 1, justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "white", padding: 20 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Done</Text>
-                </TouchableOpacity>
+          <Modal
+            transparent={true}
+            animationType="slide"
+            visible={showDatePicker}
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <View className="flex-1 justify-end">
+              <View className="bg-white p-5">
+                <View className="flex-row justify-between mb-2.5">
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text className="text-purple-700 font-bold">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text className="text-purple-700 font-bold">Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text className="text-center mb-2.5 text-base">
+                  {format(date, "dd/MM/yyyy")}
+                </Text>
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={date}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  themeVariant="light"
+                />
               </View>
-              
-              {/* Display selected date above the picker */}
-              <Text style={{ textAlign: "center", marginBottom: 10, fontSize: 16 }}>
-                {format(date, "dd/MM/yyyy")}
-              </Text>
-              
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={date}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                textColor="#000"        
-                themeVariant="light"   
-              />
             </View>
-          </View>
-        </Modal>
+          </Modal>
         )}
-  
-        {/* Category Selector */}
+
         <SelectList
           setSelected={(selectedKey) => {
             const selectedValue = categories.find(item => item.key === selectedKey)?.value;
@@ -280,48 +293,33 @@ const AddExpenseScreen = () => {
           }}
           data={categories}
           defaultOption={{ key: "1", value: "Rent" }}
-          boxStyles={{
-            backgroundColor: "#E5E7EB",
-            borderWidth: 0,
-            padding: 16,
-            borderRadius: 8,
-          }}
-          dropdownStyles={{
-            backgroundColor: "#E5E7EB",
-            borderWidth: 0,
-          }}
+          boxStyles={{ backgroundColor: "#E5E7EB", borderWidth: 0, padding: 16, borderRadius: 8 }}
+          dropdownStyles={{ backgroundColor: "#E5E7EB", borderWidth: 0 }}
         />
-  
-        {/* Description Input */}
+
         <TextInput
           placeholder="Description"
           className="bg-gray-300 p-4 rounded-lg mt-4"
           value={description}
           onChangeText={setDescription}
-          onBlur={Keyboard.dismiss}
         />
-  
-        {/* Total Input */}
+
         <TextInput
-          placeholder="Total"
+          placeholder="Expense (Required)"
           className="bg-gray-300 p-4 rounded-lg mt-4"
           keyboardType="numeric"
           value={total}
           onChangeText={setTotal}
-          onBlur={Keyboard.dismiss}
         />
-  
-        {/* Tax Input */}
+
         <TextInput
           placeholder="Tax"
           className="bg-gray-300 p-4 rounded-lg mt-4"
           keyboardType="numeric"
           value={tax}
           onChangeText={setTax}
-          onBlur={Keyboard.dismiss}
         />
-  
-        {/* Receipt Images Section */}
+
         <Text className="mt-4 mb-2 text-gray-500">Expense receipt images</Text>
         <View className="flex-row justify-between">
           <TouchableOpacity
@@ -329,17 +327,13 @@ const AddExpenseScreen = () => {
             onPress={pickImage}
           >
             {receipt ? (
-              <Image
-                source={{ uri: receipt }}
-                style={{ width: "100%", height: 100, borderRadius: 8 }}
-              />
+              <Image source={{ uri: receipt }} style={{ width: "100%", height: 100, borderRadius: 8 }} />
             ) : (
               <Text className="text-2xl text-gray-500">+</Text>
             )}
           </TouchableOpacity>
         </View>
-  
-        {/* Action Buttons */}
+
         <View className="flex-row justify-between mt-6">
           <TouchableOpacity
             className="flex-1 bg-purple-700 p-4 rounded-lg mr-2"
@@ -354,26 +348,19 @@ const AddExpenseScreen = () => {
             <Text className="text-center text-white">Save</Text>
           </TouchableOpacity>
         </View>
-  
-        {/* Loader Modal for Parsing Receipt Data */}
+
         {isParsing && (
-          <View style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.3)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
+          <View className="absolute inset-0 bg-black/30 justify-center items-center">
             <ActivityIndicator size="large" color="white" />
-            <Text style={{ color: "white", marginTop: 10 }}>Parsing Receipt Data</Text>
+            <Text className="text-white mt-2.5">Parsing Receipt Data</Text>
           </View>
         )}
-      </View>
-    </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+      <Toast />
+    </>
   );
 };
 
 export default AddExpenseScreen;
+

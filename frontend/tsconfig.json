@@ -5,7 +5,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "~/*": ["src/*"]
+      "~/*": ["src/*"],
+      "tamagui": ["./node_modules/tamagui"]
     }
   }
 }

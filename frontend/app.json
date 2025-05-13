@@ -4,7 +4,7 @@
     "slug": "frontend",
     "version": "1.0.0",
     "extra": {
-      "apiIp": "192.168.1.101"
+      "apiIp": "192.168.1.100"
     },
     "web": {
       "favicon": "./assets/favicon.png"

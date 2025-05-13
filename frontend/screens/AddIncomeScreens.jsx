@@ -7,7 +7,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Modal
+  Modal,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SelectList } from "react-native-dropdown-select-list";
@@ -37,7 +37,6 @@ const AddIncomeScreen = () => {
   const showDatePicker = async () => {
     try {
       if (Platform.OS === "android") {
-        // Android: Use the built-in Android date picker
         const { DateTimePickerAndroid } = require("@react-native-community/datetimepicker");
         DateTimePickerAndroid.open({
           value: date,
@@ -49,7 +48,6 @@ const AddIncomeScreen = () => {
           mode: "date",
         });
       } else {
-        // iOS: Show a modal containing the iOS spinner date picker
         setIosDatePickerVisible(true);
       }
     } catch (error) {
@@ -57,50 +55,38 @@ const AddIncomeScreen = () => {
     }
   };
 
-  // Handler for iOS date picker changes
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
-    // On iOS, the user can scroll the spinner; update date as it changes
     setDate(currentDate);
   };
 
   const handleSave = async () => {
     const selectedCategory =
-      categories.find(item => item.key === category)?.value || category;
-  
-    console.log("Date:", format(date, "dd/MM/yyyy"));
-    console.log("Category:", selectedCategory);
-    console.log("Description:", description);
-    console.log("Total:", total);
-  
+      categories.find((item) => item.key === category)?.value || category;
+
     const incomeData = {
       date: format(date, "yyyy-MM-dd"),
       income_category: selectedCategory,
       description: description,
       total: parseFloat(total),
     };
-  
+
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
         console.error("No access token available!");
         return;
       }
-  
-      const response = await axios.post(
-        `${API_URL}/income/add_income`,
-        incomeData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
+
+      const response = await axios.post(`${API_URL}/income/add_income`, incomeData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       console.log("Income added successfully:", response.data);
       navigation.goBack();
-  
     } catch (error) {
       if (error.response) {
         console.error("Error adding income:", error.response.data.detail || error.response.data);
@@ -113,7 +99,6 @@ const AddIncomeScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View className="flex-1 bg-gray-100 p-4">
-        {/* Header */}
         <View className="flex-row items-center mb-6">
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text className="text-2xl">←</Text>
@@ -121,15 +106,10 @@ const AddIncomeScreen = () => {
           <Text className="text-xl font-medium ml-4">Add New Income</Text>
         </View>
 
-        {/* Date Picker Trigger */}
-        <TouchableOpacity 
-          onPress={showDatePicker} 
-          className="bg-gray-200 p-4 rounded-lg mb-4"
-        >
+        <TouchableOpacity onPress={showDatePicker} className="bg-gray-200 p-4 rounded-lg mb-4">
           <Text>{format(date, "dd/MM/yyyy")}</Text>
         </TouchableOpacity>
 
-        {/* iOS Date Picker Modal */}
         {Platform.OS === "ios" && iosDatePickerVisible && (
           <Modal
             transparent={true}
@@ -139,7 +119,6 @@ const AddIncomeScreen = () => {
           >
             <View style={{ flex: 1, justifyContent: "flex-end" }}>
               <View style={{ backgroundColor: "white", padding: 20 }}>
-                {/* Top row: Cancel / Done */}
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
                   <TouchableOpacity onPress={() => setIosDatePickerVisible(false)}>
                     <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Cancel</Text>
@@ -148,18 +127,15 @@ const AddIncomeScreen = () => {
                     <Text style={{ color: "#5B21B6", fontWeight: "bold" }}>Done</Text>
                   </TouchableOpacity>
                 </View>
-                {/* Show currently selected date above the picker */}
                 <Text style={{ textAlign: "center", marginBottom: 10, fontSize: 16 }}>
                   {format(date, "dd/MM/yyyy")}
                 </Text>
-                {/* The actual iOS spinner DateTimePicker */}
                 <DateTimePicker
                   testID="dateTimePicker"
                   value={date}
                   mode="date"
                   display="spinner"
                   onChange={handleDateChange}
-                  // Ensure text is visible against a white background
                   textColor="#000"
                   themeVariant="light"
                 />
@@ -168,11 +144,10 @@ const AddIncomeScreen = () => {
           </Modal>
         )}
 
-        {/* Category Selector */}
         <View className="mb-4">
           <SelectList
             setSelected={(selectedKey) => {
-              const selectedValue = categories.find(item => item.key === selectedKey)?.value;
+              const selectedValue = categories.find((item) => item.key === selectedKey)?.value;
               setCategory(selectedValue || selectedKey);
             }}
             data={categories}
@@ -190,7 +165,6 @@ const AddIncomeScreen = () => {
           />
         </View>
 
-        {/* Description Input */}
         <TextInput
           placeholder="Description (Optional)"
           className="bg-gray-200 p-4 rounded-lg mb-4"
@@ -198,29 +172,20 @@ const AddIncomeScreen = () => {
           onChangeText={setDescription}
         />
 
-        {/* Total Input */}
         <TextInput
           placeholder="Total"
           className="bg-gray-200 p-4 rounded-lg mb-4"
           keyboardType="numeric"
           returnKeyType="done"
-          onSubmitEditing={() => {}}
           value={total}
           onChangeText={setTotal}
         />
 
-        {/* Action Buttons */}
         <View className="flex-row justify-between mt-auto">
-          <TouchableOpacity 
-            className="flex-1 bg-gray-200 p-4 rounded-lg mr-2"
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity className="flex-1 bg-gray-200 p-4 rounded-lg mr-2" onPress={() => navigation.goBack()}>
             <Text className="text-center">Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            className="flex-1 bg-purple-700 p-4 rounded-lg ml-2"
-            onPress={handleSave}
-          >
+          <TouchableOpacity className="flex-1 bg-purple-700 p-4 rounded-lg ml-2" onPress={handleSave}>
             <Text className="text-center text-white">Save</Text>
           </TouchableOpacity>
         </View>
