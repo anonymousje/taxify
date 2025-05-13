@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
@@ -73,3 +74,21 @@ def get_expenses_for_user(db: Session = Depends(get_db), current_user: User = De
         Expense.user_id == current_user.id).all()
 
     return expense_list
+
+
+@router.get("/get_expenses_summary", status_code=200)
+def get_summed_expense_for_user(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    summed_expenses = (
+        db.query(
+            Expense.expense_category,
+            func.sum(Expense.total).label("total_expense")
+        )
+        .filter(Expense.user_id == current_user.id)
+        .group_by(Expense.expense_category)
+        .all()
+    )
+
+    return {category: float(total) for category, total in summed_expenses}
