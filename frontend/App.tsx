@@ -1,27 +1,25 @@
 import React from 'react';
 import { SafeAreaView, StatusBar, Platform } from 'react-native';
 
-import AddIncomeScreen from 'screens/AddIncomeScreens';
-import AddExpenseScreen from 'screens/AddExpenseScreen';
 import Login from 'screens/Login';
 import Signup from 'screens/Signup';
-import Dashboard from 'screens/DashboardScreen';
+import AddIncomeScreen from 'screens/AddIncomeScreens';
+import AddExpenseScreen from 'screens/AddExpenseScreen';
 import IncomeListScreen from 'screens/IncomeListScreen';
 import ExpenseListScreen from 'screens/ExpenseListScreen';
 import ReceiptListScreen from 'screens/ReceiptListScreen';
+import ReceiptScreen from 'screens/RecieptScreen';
+import ReceiptDetailScreen from 'screens/ReceiptDetailScreen';
 import SettingsScreen from 'screens/SettingsScreen';
 import NotFoundScreen from 'screens/NotFoundScreen';
-import FinancesScreen from 'screens/FinancesScreen';
+
+import MainTabs from 'screens/MainTabs'; // <-- Import the tab-based navigator
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider } from 'screens/AuthContext';
 
-
 import './global.css';
-import ReceiptScreen from 'screens/RecieptScreen';
-import ReceiptDetailScreen from 'screens/ReceiptDetailScreen';
-
 
 const Stack = createStackNavigator();
 
@@ -37,71 +35,22 @@ export default function App() {
       >
         <NavigationContainer>
           <Stack.Navigator initialRouteName="Login">
-            <Stack.Screen
-              name="Signup"
-              component={Signup}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Login"
-              component={Login}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="UserDashboard"
-              component={Dashboard}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="FinancesScreen"
-              component={FinancesScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="AddIncomeScreen"
-              component={AddIncomeScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="AddExpenseScreen"
-              component={AddExpenseScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="IncomeListScreen"
-              component={IncomeListScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="ExpenseListScreen"
-              component={ExpenseListScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="ReceiptListScreen"
-              component={ReceiptListScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen 
-              name="ReceiptScreen" 
-              component={ReceiptScreen} 
-              options={{ headerShown: false }} 
-            />
-            <Stack.Screen 
-              name="ReceiptDetailScreen" 
-              component={ReceiptDetailScreen} 
-              options={{ headerShown: false }} 
-            />
-            <Stack.Screen 
-              name="NotFound" 
-              component={NotFoundScreen} 
-              options={{ headerShown: false }} 
-            />
+            {/* Authentication Screens */}
+            <Stack.Screen name="Signup" component={Signup} options={{ headerShown: false }} />
+            <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+
+            {/* Main Tab Navigation */}
+            <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+
+            {/* Detail & Utility Screens */}
+            <Stack.Screen name="AddIncomeScreen" component={AddIncomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AddExpenseScreen" component={AddExpenseScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="IncomeListScreen" component={IncomeListScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ExpenseListScreen" component={ExpenseListScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ReceiptScreen" component={ReceiptScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ReceiptDetailScreen" component={ReceiptDetailScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>

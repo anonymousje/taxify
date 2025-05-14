@@ -10,7 +10,8 @@ const availableScreens = [
     "ExpenseListScreen",
     "ReceiptListScreen",
     "Settings",
-    "FinancesScreen"
+    "FinancesScreen",
+    "MainTabs"
 ];
 
 export const handleNavigation = (navigation, screenName) => {

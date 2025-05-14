@@ -29,7 +29,7 @@ const Login = () => {
           const data = response.data;
           await AsyncStorage.setItem('accessToken', data.access_token);
           console.log('Logged In');
-          navigation.navigate('UserDashboard');
+          navigation.navigate('MainTabs');
           
         } catch (error) {
           if (error.response) {

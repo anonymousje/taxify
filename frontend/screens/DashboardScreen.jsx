@@ -26,7 +26,6 @@ import axios from "axios";
 import TransactionItem from "../components/TransactionItem";
 import FilterButton from "../components/FilterButton";
 import ChartBar from "../components/ChartBar";
-import BottomNavBar from "../components/BottomNavBar";
 import AddOptionsModal from "../components/AddOptionsModal";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
@@ -237,7 +236,8 @@ const Dashboard = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView
-        className="flex-1 mb-16"
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="p-5">
@@ -323,7 +323,6 @@ const Dashboard = () => {
                     key={`income-${item.id}-${index}`}
                     item={{ ...item, type: "income" }}
                     date={null}
-                    categoryIcon={getCategoryIcon(item.income_category)}
                     colorClass="text-green-600"
                   />
                 ))}
@@ -355,7 +354,6 @@ const Dashboard = () => {
                     key={`expense-${item.id}-${index}`}
                     item={{ ...item, type: "expense" }}
                     date={null}
-                    categoryIcon={getCategoryIcon(item.expense_category)}
                     colorClass="text-red-600"
                   />
                 ))}
@@ -363,11 +361,6 @@ const Dashboard = () => {
             ))}
         </View>
       </ScrollView>
-
-      <BottomNavBar navigation={navigation} onAddPress={() => setShowOptions(true)} />
-      {showOptions && (
-        <AddOptionsModal navigation={navigation} onClose={() => setShowOptions(false)} />
-      )}
     </SafeAreaView>
   );
 };
