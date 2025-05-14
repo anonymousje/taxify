@@ -194,8 +194,9 @@ const Dashboard = () => {
 
   const formatTransactionDate = (dateString) => {
     const date = new Date(dateString);
-    return `${date.getDate()}${monthNames[date.getMonth()]}`;
+    return date.toISOString().split("T")[0]; 
   };
+
 
   const groupByDate = (data) => {
     return data.reduce((acc, item) => {
@@ -306,9 +307,17 @@ const Dashboard = () => {
           <Text className="text-sm text-gray-500 mb-2">Total Income: {totalIncome.toFixed(2)}</Text>
 
           {showIncome &&
-            Object.entries(groupedIncome).map(([date, entries]) => (
+            Object.entries(groupedIncome)
+              .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+              .map(([date, entries]) => (
               <View key={date} className="mb-2">
-                <Text className="text-sm text-gray-600 font-medium mb-1">{date}</Text>
+                <Text className="text-sm text-gray-600 font-medium mb-1">
+                {new Date(date).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+                </Text>
                 {entries.map((item, index) => (
                   <TransactionItem
                     key={`income-${item.id}-${index}`}
@@ -330,9 +339,17 @@ const Dashboard = () => {
           <Text className="text-sm text-gray-500 mb-2">Total Expenses: {totalExpenses.toFixed(2)}</Text>
 
           {showExpenses &&
-            Object.entries(groupedExpenses).map(([date, entries]) => (
+            Object.entries(groupedExpenses)
+              .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+              .map(([date, entries]) => (
               <View key={date} className="mb-2">
-                <Text className="text-sm text-gray-600 font-medium mb-1">{date}</Text>
+                <Text className="text-sm text-gray-600 font-medium mb-1">
+                  {new Date(date).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </Text>
                 {entries.map((item, index) => (
                   <TransactionItem
                     key={`expense-${item.id}-${index}`}

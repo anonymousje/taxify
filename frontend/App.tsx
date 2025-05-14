@@ -11,6 +11,7 @@ import ExpenseListScreen from 'screens/ExpenseListScreen';
 import ReceiptListScreen from 'screens/ReceiptListScreen';
 import SettingsScreen from 'screens/SettingsScreen';
 import NotFoundScreen from 'screens/NotFoundScreen';
+import FinancesScreen from 'screens/FinancesScreen';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -49,6 +50,11 @@ export default function App() {
             <Stack.Screen
               name="UserDashboard"
               component={Dashboard}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="FinancesScreen"
+              component={FinancesScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen

@@ -39,7 +39,19 @@ const Login = () => {
           }
         }
       };
-
+    // const handleLogin = async () => {
+    //   try {
+    //     const res = await fetch("http://192.168.1.100:8000/auth/login", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({ email, password }),
+    //     });
+    //     const data = await res.json();
+    //     console.log("Login success:", data);
+    //   } catch (err) {
+    //     console.error("FETCH ERROR", err);
+    //   }
+    // };
     return (
         <View className="flex-1 justify-center items-left bg-white px-6">
             <Text className="text-black text-2xl font-bold mb-1">Hi, Welcome Back! 👋</Text>

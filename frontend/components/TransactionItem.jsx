@@ -16,10 +16,10 @@ const TransactionItem = ({ item, categoryIcon, date, colorClass }) => {
         </View>
         <View className="flex-1">
           <Text className="font-semibold text-gray-800">
-            {item.expense_category || item.income_category || "Shopping"}
+            {item.expense_category || item.income_category || "N/A"}
           </Text>
           <Text className="text-gray-400 text-sm">
-            {item.description || "Clothes and watch"}
+            {item.description || "N/A"}
           </Text>
         </View>
         <View className="items-end">
@@ -30,7 +30,7 @@ const TransactionItem = ({ item, categoryIcon, date, colorClass }) => {
             })}
           </Text>
           <Text className="text-gray-400 text-xs">
-            Tax {item.tax || 10}
+            Tax {item.tax || 0}
           </Text>
         </View>
       </View>

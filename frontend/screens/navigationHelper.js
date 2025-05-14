@@ -9,7 +9,8 @@ const availableScreens = [
     "IncomeListScreen",
     "ExpenseListScreen",
     "ReceiptListScreen",
-    "Settings"
+    "Settings",
+    "FinancesScreen"
 ];
 
 export const handleNavigation = (navigation, screenName) => {
