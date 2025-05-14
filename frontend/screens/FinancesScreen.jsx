@@ -12,6 +12,8 @@ import Constants from "expo-constants";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import TransactionItem from "../components/TransactionItem";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -45,9 +47,11 @@ const FinancesScreen = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const getCategoryIcon = (category) => {
     switch ((category || "").toLowerCase()) {
