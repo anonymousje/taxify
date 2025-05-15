@@ -1,6 +1,5 @@
 from fastapi.responses import FileResponse
-from scripts.pdfFiller import fill_tax_form_image, calculate_tax
-from scripts.pdfFiller import generate_pdf_from_images
+from scripts.pdfFiller import fill_tax_form_image, calculate_tax, generate_pdf_from_images
 from sqlalchemy import func
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
