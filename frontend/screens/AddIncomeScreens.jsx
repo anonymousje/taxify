@@ -12,14 +12,18 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { format } from "date-fns";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
 import axios from "axios";
+import useFinancesStore from "stores/useFinancesStore";
+import { getToken } from "utils/authTokenStorage";
+import Toast from "react-native-toast-message";
+
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddIncomeScreen = () => {
+  const { addIncome } = useFinancesStore();
   const [date, setDate] = useState(new Date());
   const [category, setCategory] = useState("Salary");
   const [description, setDescription] = useState("");
@@ -72,7 +76,7 @@ const AddIncomeScreen = () => {
     };
 
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         console.error("No access token available!");
         return;
@@ -85,8 +89,19 @@ const AddIncomeScreen = () => {
         },
       });
 
-      console.log("Income added successfully:", response.data);
-      navigation.goBack();
+      addIncome(response.data);
+
+      Toast.show({
+        type: "success",
+        text1: "Income Added",
+        text2: "Your income was saved successfully.",
+        visibilityTime: 1000,
+      });
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
+
     } catch (error) {
       if (error.response) {
         console.error("Error adding income:", error.response.data.detail || error.response.data);
@@ -96,7 +111,9 @@ const AddIncomeScreen = () => {
     }
   };
 
-  return (
+
+return (
+  <>
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View className="flex-1 bg-gray-100 p-4">
         <View className="flex-row items-center mb-6">
@@ -191,7 +208,11 @@ const AddIncomeScreen = () => {
         </View>
       </View>
     </TouchableWithoutFeedback>
-  );
+
+    <Toast />
+  </>
+);
+
 };
 
 export default AddIncomeScreen;

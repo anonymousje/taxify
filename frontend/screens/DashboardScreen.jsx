@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   format,
   parseISO,
@@ -27,12 +26,13 @@ import TransactionItem from "../components/TransactionItem";
 import FilterButton from "../components/FilterButton";
 import ChartBar from "../components/ChartBar";
 import AddOptionsModal from "../components/AddOptionsModal";
+import useFinancesStore from "stores/useFinancesStore";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const Dashboard = () => {
-  const [income, setIncome] = useState([]);
-  const [expenses, setExpenses] = useState([]);
+  const { income, expenses, setIncome, setExpenses } = useFinancesStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("Weekly");
@@ -49,7 +49,7 @@ const Dashboard = () => {
 
   const fetchExpenses = async () => {
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) return [];
       const response = await axios.get(`${API_URL}/expense/get_expenses`, {
         headers: {
@@ -66,7 +66,7 @@ const Dashboard = () => {
 
   const fetchIncome = async () => {
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) return [];
       const response = await axios.get(`${API_URL}/income/get_incomes`, {
         headers: {
@@ -174,13 +174,21 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    processChartData(income, expenses, filter);
+  }, [filter, income, expenses]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData().finally(() => setRefreshing(false));
   }, [filter]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchData(); 
+    };
+
+    loadInitialData();
+  }, []);
 
   const getCategoryIcon = (category) => {
     switch ((category || "").toLowerCase()) {
@@ -219,6 +227,8 @@ const Dashboard = () => {
 
   const totalIncome = income.reduce((sum, item) => sum + (item.total || 0), 0);
   const totalExpenses = expenses.reduce((sum, item) => sum + (item.total || 0), 0);
+  const totalBalance = totalIncome - totalExpenses;
+
 
   const groupedIncome = groupByDate(income);
   const groupedExpenses = groupByDate(expenses);
@@ -242,25 +252,26 @@ const Dashboard = () => {
       >
         <View className="p-5">
           <View className="mb-4">
-            <Text className="text-gray-800 text-base font-medium">Balance</Text>
+            <Text className="text-gray-800 text-base font-medium">Total Balance</Text>
             <Text className="text-4xl font-bold text-purple-900">
-              {(selectedData.income - selectedData.expense).toFixed(2)}
+              {totalBalance.toFixed(2)}
             </Text>
           </View>
 
           <View className="bg-purple-900 rounded-lg mb-5 p-5 overflow-hidden">
             <View className="flex-row justify-between mb-3">
-              <Text className="text-amber-300 font-medium text-sm">Exp</Text>
+              <Text className="text-white font-medium text-sm">Exp</Text>
               <Text className="text-white font-medium text-sm">Bal</Text>
               <Text className="text-white font-medium text-sm">Tax</Text>
               <Text className="text-white font-medium text-sm">Inc</Text>
             </View>
             <View className="flex-row justify-between mb-2">
-              <Text className="text-amber-300">{selectedData.expense.toFixed(0)}</Text>
-              <Text className="text-white">+{selectedData.balance.toFixed(0)}</Text>
-              <Text className="text-white">+{selectedData.tax.toFixed(0)}</Text>
-              <Text className="text-white">{selectedData.income.toFixed(0)}</Text>
+              <Text className="text-red-400 font-semibold">{selectedData.expense.toFixed(0)}</Text>
+              <Text className="text-gray-200 font-semibold">{selectedData.balance.toFixed(0)}</Text>
+              <Text className="text-gray-200 font-semibold">{selectedData.tax.toFixed(0)}</Text>
+              <Text className="text-green-400 font-semibold">{selectedData.income.toFixed(0)}</Text>
             </View>
+
             <Text className="text-white text-center font-semibold mb-3">
               {filter === "Weekly" ? "This Week" : monthNames[selectedIndex]}
             </Text>

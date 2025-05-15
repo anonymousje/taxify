@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import Constants from "expo-constants";
 import { handleNavigation } from "./navigationHelper";
 import axios from "axios";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -19,7 +20,7 @@ const IncomeListScreen = () => {
 
   const handleDelete = async (incomeId) => {
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         console.error("No access token found!");
         return;
@@ -50,7 +51,7 @@ const IncomeListScreen = () => {
 
   const fetchIncome = async () => {
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         console.error("No access token found");
         return;

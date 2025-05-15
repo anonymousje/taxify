@@ -7,27 +7,28 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import TransactionItem from "../components/TransactionItem";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import useFinancesStore from "stores/useFinancesStore";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const FinancesScreen = () => {
   const [selectedTab, setSelectedTab] = useState("income");
   const [loading, setLoading] = useState(true);
-  const [income, setIncome] = useState([]);
-  const [expenses, setExpenses] = useState([]);
+  const { income, expenses, setIncome, setExpenses } = useFinancesStore();
+
   const navigation = useNavigation();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) return;
 
       const [incomeRes, expenseRes] = await Promise.all([

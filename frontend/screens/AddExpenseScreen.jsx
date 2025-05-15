@@ -20,11 +20,14 @@ import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import axios from "axios";
 import Toast from "react-native-toast-message";
+import useFinancesStore from "stores/useFinancesStore";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
 const AddExpenseScreen = () => {
   const navigation = useNavigation();
+  const { addExpense } = useFinancesStore();
   const route = useRoute();
 
   const [date, setDate] = useState(new Date());
@@ -199,7 +202,7 @@ const AddExpenseScreen = () => {
   const submitExpense = async (expenseData) => {
     Keyboard.dismiss();
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         Toast.show({
           type: "error",
@@ -222,6 +225,7 @@ const AddExpenseScreen = () => {
         text2: "Your expense was saved successfully."
       });
 
+      addExpense(response.data);
       setTimeout(() => {
         navigation.goBack();
       }, 1000);

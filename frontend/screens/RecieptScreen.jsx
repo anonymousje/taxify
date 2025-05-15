@@ -10,7 +10,6 @@ import {
   Platform,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { parse, isValid, format } from "date-fns";
 import Constants from "expo-constants";
 import axios from "axios";
@@ -18,6 +17,8 @@ import Toast from "react-native-toast-message";
 import { Dimensions } from "react-native";
 import { ScrollView, Modal } from "react-native";
 import FullImageModal from "components/FullImageModal";
+import useFinancesStore from "stores/useFinancesStore";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -37,6 +38,7 @@ const ReceiptScreen = () => {
   const route = useRoute();
 
   const { expenseData, receipt, extractedData, total, tax } = route.params;
+  const addExpense = useFinancesStore((state) => state.addExpense);
   const [vendor, setVendor] = useState("");
   const [receiptTotal, setReceiptTotal] = useState("");
   const [receiptTax, setReceiptTax] = useState("");
@@ -130,7 +132,7 @@ const ReceiptScreen = () => {
 
     setIsSubmitting(true);
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         setIsSubmitting(false);
         return;
@@ -149,9 +151,11 @@ const ReceiptScreen = () => {
         text2: "Receipt data successfully submitted.",
       });
 
+      addExpense(updatedExpenseData);
+
       setTimeout(() => {
         navigation.pop(2); 
-      }, 1000);
+      }, 500);
     } catch (error) {
       Toast.show({
         type: "error",

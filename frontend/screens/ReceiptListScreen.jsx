@@ -9,10 +9,10 @@ import {
   ActivityIndicator
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
+import { getToken } from "utils/authTokenStorage";
 
 const API_URL = `http://${Constants.expoConfig.extra.apiIp}:8000`;
 
@@ -29,7 +29,7 @@ const ReceiptListScreen = () => {
 
   const fetchReceipts = async () => {
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await getToken();
       if (!token) {
         console.error("No access token found!");
         return;
