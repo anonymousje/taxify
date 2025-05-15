@@ -11,7 +11,8 @@ const availableScreens = [
     "ReceiptListScreen",
     "Settings",
     "FinancesScreen",
-    "MainTabs"
+    "MainTabs",
+    "TaxForm"
 ];
 
 export const handleNavigation = (navigation, screenName) => {

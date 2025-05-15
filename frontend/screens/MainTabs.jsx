@@ -5,10 +5,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import Dashboard from 'screens/DashboardScreen';
 import FinancesScreen from 'screens/FinancesScreen';
-import NotFoundScreen from 'screens/NotFoundScreen';
-// import TaxForm from 'screens/TaxForm'; // make sure this exists
 import ReceiptListScreen from 'screens/ReceiptListScreen';
 import SettingsScreen from 'screens/SettingsScreen';
+import TaxFormScreen from './TaxForm';
 
 const Tab = createBottomTabNavigator();
 
@@ -36,7 +35,7 @@ const MainTabs = () => {
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen name="Finances" component={FinancesScreen} />
-      <Tab.Screen name="TaxForm" component={NotFoundScreen} />
+      <Tab.Screen name="TaxForm" component={TaxFormScreen} />
       <Tab.Screen name="Receipts" component={ReceiptListScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

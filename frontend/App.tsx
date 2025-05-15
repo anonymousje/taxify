@@ -8,6 +8,7 @@ import AddExpenseScreen from 'screens/AddExpenseScreen';
 import IncomeListScreen from 'screens/IncomeListScreen';
 import ExpenseListScreen from 'screens/ExpenseListScreen';
 import ReceiptListScreen from 'screens/ReceiptListScreen';
+import TaxFormScreen from 'screens/TaxForm';
 import ReceiptScreen from 'screens/RecieptScreen';
 import ReceiptDetailScreen from 'screens/ReceiptDetailScreen';
 import SettingsScreen from 'screens/SettingsScreen';
@@ -44,6 +45,7 @@ export default function App() {
 
             {/* Detail & Utility Screens */}
             <Stack.Screen name="AddIncomeScreen" component={AddIncomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="TaxForm" component={TaxFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddExpenseScreen" component={AddExpenseScreen} options={{ headerShown: false }} />
             <Stack.Screen name="IncomeListScreen" component={IncomeListScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ExpenseListScreen" component={ExpenseListScreen} options={{ headerShown: false }} />
